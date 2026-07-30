@@ -1,0 +1,62 @@
+[
+  {
+    "id": 1,
+    "document_id": "DOC-001",
+    "title": "Quy định nghỉ phép",
+    "domain": "nhan_su",
+    "department": "BAN_LE",
+    "doc_type": "quy_dinh",
+    "doc_status": "ACTIVE",
+    "text": "Nhân viên được nghỉ phép 12 ngày mỗi năm và có thể chuyển đổi sang nghỉ bù khi cần."
+  },
+  {
+    "id": 2,
+    "document_id": "DOC-002",
+    "title": "Làm thêm giờ",
+    "domain": "nhan_su",
+    "department": "BAN_LE",
+    "doc_type": "quy_dinh",
+    "doc_status": "ACTIVE",
+    "text": "Làm thêm giờ phải được trưởng bộ phận phê duyệt trước khi thực hiện."
+  },
+  {
+    "id": 3,
+    "document_id": "DOC-003",
+    "title": "Hướng dẫn onboarding",
+    "domain": "nhan_su",
+    "department": "BAN_LE",
+    "doc_type": "huong_dan",
+    "doc_status": "ACTIVE",
+    "text": "Nhân viên mới cần hoàn tất các thủ tục đăng ký tài khoản và cam kết bảo mật thông tin."
+  },
+  {
+    "id": 4,
+    "document_id": "DOC-004",
+    "title": "Chính sách bảo mật",
+    "domain": "hanh_chinh",
+    "department": "PHONG_HC",
+    "doc_type": "chinh_sach",
+    "doc_status": "ACTIVE",
+    "text": "Tài liệu nội bộ chỉ được chia sẻ trong phạm vi công việc và phải được bảo vệ bằng mật khẩu."
+  },
+  {
+    "id": 5,
+    "document_id": "DOC-005",
+    "title": "Quy trình đặt phòng họp",
+    "domain": "hanh_chinh",
+    "department": "PHONG_HC",
+    "doc_type": "quy_trinh",
+    "doc_status": "ACTIVE",
+    "text": "Đặt phòng họp cần gửi yêu cầu trước 24 giờ và xác nhận lại lịch trình."
+  },
+  {
+    "id": 6,
+    "document_id": "DOC-006",
+    "title": "Cấu hình email doanh nghiệp",
+    "domain": "cong_nghe",
+    "department": "IT",
+    "doc_type": "huong_dan",
+    "doc_status": "ACTIVE",
+    "text": "Tài khoản email doanh nghiệp có thể được cấu hình trên Outlook, Thunderbird và thiết bị di động."
+  }
+]
