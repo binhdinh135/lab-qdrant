@@ -1,3 +1,4 @@
+
 # KỊCH BẢN DEMO QDRANT - DÙNG POWERSHELL (WINDOWS)
 
 > Không cần Python. Chỉ dùng Docker + PowerShell (có sẵn trên Windows).
@@ -340,3 +341,4 @@ Data vẫn giữ trong `qdrant_storage\`. Chạy lại `docker compose up -d` l�
 | PowerShell trực tiếp | qua Load Balancer + gRPC |
 | Không quantization | INT8 Scalar Quantization |
 | Không cluster | 4 VMs × 48GB RAM |
+=======
