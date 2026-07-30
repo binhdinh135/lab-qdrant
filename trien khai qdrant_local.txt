@@ -1,0 +1,134 @@
+HƯỚNG DẪN TRIỂN KHAI QDRANT TRÊN MÁY CÁ NHÂN (LOCAL / POC)
+
+Mục tiêu
+- Triển khai Qdrant trên máy cá nhân trước khi áp dụng cho server công ty.
+- Dùng cho PoC, test embedding, search, và kiểm tra luồng ingestion.
+- Môi trường này đơn giản, không dùng auth TLS, không dùng cluster production.
+
+1. Mục tiêu của bản triển khai local
+- Chạy Qdrant trên Docker Desktop.
+- Test CRUD vector và search cơ bản.
+- Chuẩn bị trước cho môi trường công ty sau này.
+
+2. Yêu cầu hệ thống
+- Windows 10/11
+- Docker Desktop đã cài và chạy
+- 8 GB RAM trở lên (khuyến nghị 16 GB)
+- Dung lượng ổ cứng: tối thiểu 50 GB trống
+- Python 3.10+ nếu test bằng script
+
+3. Cấu trúc thư mục đề xuất
+D:\Qdrant\local-poc\
+  ├─ docker-compose.yml
+  └─ qdrant_storage\
+
+4. File docker-compose.yml
+Tạo file docker-compose.yml với nội dung sau:
+
+version: "3.9"
+services:
+  qdrant:
+    image: qdrant/qdrant:v1.12.0
+    container_name: qdrant-local
+    ports:
+      - "6333:6333"
+      - "6334:6334"
+    volumes:
+      - ./qdrant_storage:/qdrant/storage
+    restart: unless-stopped
+
+5. Khởi động Qdrant
+Mở Terminal tại thư mục D:\Qdrant\local-poc rồi chạy:
+
+docker compose up -d
+
+Kiểm tra trạng thái:
+
+docker compose ps
+
+Kiểm tra API:
+
+curl http://localhost:6333/collections
+
+Nếu trả về JSON rỗng hoặc danh sách collection, nghĩa là Qdrant đang chạy.
+
+6. Tạo collection đầu tiên
+Dùng lệnh curl:
+
+curl -X PUT http://localhost:6333/collections/smart_search \
+  -H "Content-Type: application/json" \
+  -d '{
+    "vectors": {
+      "size": 1024,
+      "distance": "Cosine"
+    },
+    "shard_number": 1,
+    "replication_factor": 1
+  }'
+
+7. Test upsert dữ liệu mẫu
+Ví dụ insert 1 điểm vector:
+
+curl -X PUT "http://localhost:6333/collections/smart_search/points?wait=true" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "points": [
+      {
+        "id": 1,
+        "vector": {
+          "default": [0.1, 0.2, 0.3, 0.4]
+        },
+        "payload": {
+          "doc_id": "DOC-001",
+          "status": "ACTIVE",
+          "domain": "nhan_su"
+        }
+      }
+    ]
+  }'
+
+Lưu ý: vector size phải đúng bằng 1024, nên ví dụ trên chỉ là mẫu ngắn. Trong thực tế nên dùng vector 1024 chiều từ embedding model.
+
+8. Test search cơ bản
+
+curl -X POST "http://localhost:6333/collections/smart_search/points/query" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "vector": {
+      "default": [0.1, 0.2, 0.3, 0.4]
+    },
+    "limit": 5
+  }'
+
+9. Gợi ý cho môi trường cá nhân
+- Chỉ dùng 1 node, 1 collection ban đầu.
+- Không bật cluster, không bật replication sản xuất.
+- Dùng local storage ở thư mục qdrant_storage.
+- Ưu tiên test với dữ liệu nhỏ trước khi tăng quy mô.
+
+10. Bước tiếp theo trước khi chuyển sang server công ty
+- Thay đổi cấu hình sang nhiều node nếu cần HA.
+- Bật auth và TLS.
+- Dùng volume ổn định và backup định kỳ.
+- Tách collection theo domain hoặc business unit nếu dữ liệu lớn.
+- Chuẩn bị pipeline ingest và model embedding riêng.
+
+11. Ghi chú quan trọng
+- Đây là bản triển khai POC/local, không phải bản production.
+- Nếu dùng trên máy cá nhân, ưu tiên đơn giản hóa trước.
+- Khi chuyển sang công ty, nên thêm:
+  - backup/restore
+  - monitoring
+  - role-based access
+  - cluster và replica
+  - CI/CD và deployment automation
+
+12. Checklist nhanh
+- [ ] Cài Docker Desktop
+- [ ] Tạo thư mục local-poc
+- [ ] Tạo docker-compose.yml
+- [ ] Chạy docker compose up -d
+- [ ] Kiểm tra API localhost:6333
+- [ ] Tạo collection
+- [ ] Test upsert/search
+- [ ] Đánh giá hiệu năng và chuẩn bị cho server công ty

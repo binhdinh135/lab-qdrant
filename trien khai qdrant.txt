@@ -1,0 +1,1416 @@
+BÁO CÁO NGHIÊN CỨU VÀ TRIỂN KHAI QDRANT DATABASE
+
+Dự án: AI Smart Search – v2
+
+Thông tin
+
+Giá trị
+
+Dự án
+
+AI Smart Search
+
+Phiên bản
+
+2.0
+
+Ngày lập
+
+28/07/2026
+
+Stack
+
+Qdrant + Oracle (không dùng Elasticsearch)
+
+MỤC LỤC
+
+PHẦN A – KIẾN TRÚC VÀ THIẾT KẾ
+
+
+
+Tổng quan giải pháp & Lý do chọn Qdrant
+
+
+
+Qdrant hoạt động như thế nào (Input → Output)
+
+
+
+Kiến trúc End-to-End (Qdrant + Oracle)
+
+
+
+Quyết định thiết kế (Design Decisions)
+
+
+
+Limitations & Out of Scope
+
+PHẦN B – SIZING VÀ CAPACITY PLANNING
+
+6. Dữ liệu thực từ eISO
+
+
+
+Sizing Estimation Method
+
+
+
+Cấu hình hạ tầng VM
+
+PHẦN C – CHIẾN LƯỢC SHARD & REPLICA (chi tiết)
+
+9. Kiến trúc phân tán Qdrant
+
+
+
+Phân bổ trên cluster
+
+
+
+Search song song & Failover
+
+PHẦN D – TRIỂN KHAI STEP-BY-STEP
+
+12. Cài đặt Qdrant Cluster (Docker trên VM)
+
+
+
+Tạo Collection & Payload Indexes
+
+
+
+Bảng lệnh/API quan trọng
+
+
+
+Ingestion Pipeline
+
+
+
+Search Integration
+
+PHẦN E – SECURITY
+
+17. Bảo mật hệ thống
+
+PHẦN F – VẬN HÀNH & KẾ HOẠCH
+
+18. Monitoring & Backup
+
+
+
+Timeline & Checklist
+
+
+
+Performance Targets
+
+
+
+Rủi ro & Phương án xử lý
+
+PHỤ LỤC
+
+A. Kiến thức nền (Vector, HNSW, Quantization)
+
+B. Tài liệu tham khảo
+
+PHẦN A – KIẾN TRÚC VÀ THIẾT KẾ
+
+1. Tổng quan giải pháp & Lý do chọn Qdrant
+
+1.1 Bối cảnh
+
+AI Smart Search cần Vector Database để:
+
+Lưu embedding vectors (semantic search)
+
+Lưu sparse vectors (keyword search thay Elasticsearch)
+
+Filter metadata (ACL, domain, status) cùng lúc search
+
+1.2 Tại sao chọn Qdrant?
+
+Tiêu chí
+
+Qdrant
+
+Milvus
+
+Pinecone
+
+pgvector
+
+On-premise VM
+
+✅
+
+✅
+
+❌ (cloud)
+
+✅
+
+Sparse vectors (keyword)
+
+✅ (từ v1.7)
+
+✅
+
+✅
+
+❌
+
+Payload filter inline
+
+✅ Native
+
+✅
+
+✅
+
+⚠️ Chậm
+
+Shard + Replica
+
+✅
+
+✅
+
+✅
+
+❌
+
+Lightweight (ít dependency)
+
+✅ (1 binary)
+
+❌ (etcd, minio)
+
+N/A
+
+✅
+
+Quantization
+
+✅
+
+✅
+
+✅
+
+❌
+
+License
+
+Apache 2.0
+
+Apache 2.0
+
+Proprietary
+
+PostgreSQL
+
+Lý do chọn:
+
+Làm cả semantic + keyword trong 1 DB (không cần Elasticsearch)
+
+Lightweight – 1 binary, không phụ thuộc Kafka/etcd
+
+Payload filter chạy TRONG HNSW traversal
+
+On-premise (yêu cầu bảo mật ngân hàng)
+
+Scale 100M+ vectors (roadmap dài hạn)
+
+1.3 Thông tin kỹ thuật
+
+Thuộc tính
+
+Giá trị
+
+Ngôn ngữ
+
+Rust
+
+License
+
+Apache 2.0
+
+API
+
+REST (port 6333) + gRPC (port 6334)
+
+Phiên bản target
+
+≥ 1.12
+
+Trang chủ
+
+https://qdrant.tech
+
+2. Qdrant hoạt động như thế nào
+
+2.1 Input → Process → Storage → Output
+
+┌─────────────────────────────────────────────────────────────┐
+│  INPUT (Qdrant NHẬN):                                        │
+│  • Dense vector (1024 số thực) – semantic meaning            │
+│  • Sparse vector (keyword weights) – keyword matching        │
+│  • Payload (JSON metadata)                                   │
+│  • ID (định danh)                                            │
+├─────────────────────────────────────────────────────────────┤
+│  PROCESS (Qdrant XỬ LÝ):                                    │
+│  • Xây HNSW graph cho dense vectors                          │
+│  • Xây inverted index cho sparse vectors                     │
+│  • Tạo payload indexes (filter nhanh)                        │
+│  • Quantize dense vectors (INT8 nếu bật)                     │
+├─────────────────────────────────────────────────────────────┤
+│  STORAGE (Qdrant LƯU):                                      │
+│  Point = {                                                   │
+│    id: "chunk-001",                                          │
+│    vector: { "dense": [0.12, -0.34, ...],    ← 1024 số      │
+│              "sparse": {"nghỉ":0.8,"phép":0.7} ← keywords  }│
+│    payload: { "doc_id":"DOC-123", "status":"ACTIVE",         │
+│               "departments":["BAN_LE"], "domain":"nhan_su" } │
+│  }                                                           │
+├─────────────────────────────────────────────────────────────┤
+│  OUTPUT (khi search):                                        │
+│  • Top N points gần nhất (semantic + keyword kết hợp)        │
+│  • Kèm payload + score                                      │
+│  • Đã filter theo payload conditions                         │
+└─────────────────────────────────────────────────────────────┘
+
+2.2 Hybrid Search trong Qdrant (thay Elasticsearch)
+
+BGE-M3 sinh cả dense vector VÀ sparse vector cho mỗi chunk:
+
+Dense: hiểu ngữ nghĩa ("nghỉ phép" ≈ "phép năm")
+
+Sparse: bắt keyword chính xác ("QĐ-2024-0123")
+
+Qdrant search cả 2 cùng lúc → fusion nội bộ → Top N
+
+# Search hybrid (dense + sparse) trong Qdrant
+results = client.query_points(
+    collection_name="smart_search",
+    prefetch=[
+        Prefetch(query=dense_vector, using="dense", limit=100),
+        Prefetch(query=sparse_vector, using="sparse", limit=100),
+    ],
+    query=FusionQuery(fusion=Fusion.RRF),  # RRF fusion nội bộ
+    query_filter=Filter(must=[
+        FieldCondition(key="doc_status", match=MatchValue(value="ACTIVE")),
+    ]),
+    limit=50,
+)
+
+→ Không cần Elasticsearch. Qdrant làm cả hai.
+
+3. Kiến trúc End-to-End (Qdrant + Oracle)
+
+3.1 Hai tầng lưu trữ (thay vì 3)
+
+Tầng
+
+Hệ thống
+
+Lưu gì
+
+Search bằng gì
+
+Search
+
+Qdrant
+
+Dense + Sparse vectors + payload
+
+Hybrid (semantic + keyword)
+
+Metadata
+
+Oracle
+
+ACL, version, owner, URL, business info
+
+SQL queries
+
+3.2 Luồng Search
+
+User query
+    │
+    ▼
+[1] Embedding (BGE-M3 → dense vector + sparse vector)
+    │
+    ▼
+[2] Qdrant Hybrid Search
+    │ • Dense search (semantic) + Sparse search (keyword)
+    │ • RRF fusion nội bộ
+    │ • Payload filter: doc_status, domain, departments
+    │ → Top N candidates
+    │
+    ▼
+[3] Oracle ACL + Enrich
+    │ • Check quyền (DEPT OR USERS OR SPECIAL_GROUPS)
+    │ • Lấy metadata: URL, version, owner
+    │ → còn M docs hợp lệ
+    │
+    ▼
+[4] Re-ranker (cross-encoder)
+    │ → Top K
+    │
+    ▼
+[5] Response: Top K links + tiêu đề + mã VB + highlight
+
+3.3 Luồng Ingestion
+
+eISO trigger/batch
+    │
+    ▼
+Download doc → Parse (Docling) → Chunk (500 tokens)
+    │
+    ▼
+BGE-M3 encode → dense vector (1024d) + sparse vector
+    │
+    ▼
+Qdrant upsert (vector + payload: ACL, domain, status)
+    │
+    ▼
+Oracle ghi metadata
+
+4. Quyết định thiết kế (Design Decisions)
+
+Đề xuất cho giai đoạn Pilot, hiệu chỉnh sau POC và benchmark.
+
+#
+
+Quyết định
+
+Lý do
+
+1
+
+Qdrant thay Elasticsearch
+
+BGE-M3 sparse vectors thay BM25. Giảm infra complexity
+
+2
+
+BGE-M3 (1024d)
+
+Hybrid 3-in-1, có VN fine-tune, MIT license
+
+3
+
+Shard=4, Replica=2
+
+Scale cho 8-10M vectors trên 3-4 nodes
+
+4
+
+Mmap + Scalar Quantization INT8
+
+Cân bằng RAM/latency cho VM
+
+5
+
+1 collection + payload filter
+
+Đơn giản, tiết kiệm RAM
+
+6
+
+Oracle cho ACL (post-search)
+
+Source of truth cho quyền, metadata
+
+7
+
+gRPC cho production
+
+Nhanh hơn REST 2-3x
+
+5. Limitations & Out of Scope
+
+5.1 Qdrant KHÔNG làm
+
+Qdrant KHÔNG...
+
+Ai/Cái gì làm thay
+
+Thay Oracle
+
+Oracle giữ ACL, metadata, nghiệp vụ
+
+Tự sinh embedding
+
+BGE-M3 model riêng
+
+Đọc/parse PDF
+
+Docling / Parser riêng
+
+Có LLM
+
+LLM là thành phần riêng (nếu cần)
+
+Quản lý user/role
+
+IAM / LDAP / Oracle
+
+Đảm bảo 100% recall
+
+HNSW là approximate (~99%)
+
+5.2 Out of Scope báo cáo này
+
+Lựa chọn Embedding Model cuối cùng (cần POC)
+
+Thiết kế RAG/Prompt
+
+Thiết kế Parser/OCR
+
+Thiết kế ACL chi tiết (Oracle side)
+
+Thiết kế UI/UX
+
+PHẦN B – SIZING VÀ CAPACITY PLANNING
+
+6. Dữ liệu thực từ eISO
+
+Nguồn: Slide tổng quan v3.4 + feedback từ team lead
+
+Thông số
+
+Giá trị
+
+Tổng văn bản
+
+~180.000
+
+Tra cứu
+
+~35.000 lượt/ngày
+
+Upload mới
+
+~200 VB/tháng
+
+CCU
+
+peak ~100 concurrent
+
+Throughput yêu cầu
+
+≥ 50 TPS
+
+Slide v3.4 (yêu cầu SLA hệ thống, không suy diễn từ lưu lượng hiện tại)
+
+Ước tính vectors
+
+8–10 triệu (theo team lead)
+
+Target dài hạn
+
+100M vectors
+
+7. Sizing Estimation Method
+
+Các giá trị dùng cho capacity planning. Triển khai production cần hiệu chỉnhsau POC và benchmark trên dữ liệu thực tế.
+
+7.1 Sizing Assumptions
+
+Hạng mục
+
+Giá trị
+
+Ghi chú
+
+Embedding model
+
+BAAI BGE-M3
+
+Đề xuất #1 từ slide v3.4
+
+Embedding dimension
+
+1024
+
+Dense output của BGE-M3
+
+Chunk size
+
+~500 tokens
+
+Giả định cho sizing, sẽ tối ưu sau POC
+
+Ước tính vectors/document
+
+≈45-55 (sizing dùng ~50)
+
+8-10M / 180K docs ≈ 50
+
+Quantization
+
+Scalar INT8
+
+Giảm 4x RAM, mất <1% recall
+
+HNSW M
+
+16
+
+Qdrant default, balance recall/RAM
+
+Replication factor
+
+2
+
+HA: mất 1 node vẫn hoạt động
+
+Storage mode
+
+Mmap (SSD-backed)
+
+Vectors trên SSD, quantized + HNSW trong RAM
+
+Payload
+
+Metadata + ACL fields
+
+Kích thước phụ thuộc số trường metadata
+
+⚠️ Tất cả phép tính sizing bên dưới dựa trên bảng giả định này.Nếu thay đổi bất kỳ giá trị nào (dimension, chunk size, model...) → cần tính lại.
+
+Estimated vectors:
+
+Estimated vectors ≈ Documents × Average chunks/document
+                  ≈ 180.000 × ~50
+                  ≈ 9.000.000 vectors (8-10M)
+
+7.2 RAM
+
+Giả định: INT8 quantization, Mmap, HNSW m=16, Replica=2, D=1024
+
+Breakdown ước tính (1M vectors, D=1024, INT8 + mmap):
+
+Quantized vectors: 1M × 1024 × 1 byte       ≈ 1.0 GB
+HNSW graph:        1M × ~250 bytes           ≈ 0.25 GB
+Payload index:     1M × ~200 bytes           ≈ 0.2 GB
+────────────────────────────────────────────────────────
+Pure data subtotal:                          ≈ 1.5 GB
+
+Runtime overhead (fragmentation, cache,
+  segment management, optimizer):            ≈ 2-4 GB
+────────────────────────────────────────────────────────
+Thực tế tiêu thụ:                            ≈ 4-6 GB / 1M vectors
+
+Để capacity planning theo hướng bảo thủ, tài liệu sử dụng 6 GB/1M vectors(cận trên, dự phòng peak và runtime overhead).
+
+Bao gồm:
+
+Quantized vectors (INT8)
+
+HNSW graph
+
+Metadata/payload index overhead
+
+Runtime overhead (fragmentation, segment management, cache)
+
+Không bao gồm: OS, page cache, monitoring (tính riêng bên dưới).
+
+Cluster RAM ≈ (Vectors / 1M) × 6 GB × Replication Factor
+            + 8 GB (OS + page cache + monitoring cho toàn cluster)
+
+Lưu ý: Replica không tăng RAM trên 1 node, mà tăng RAM toàn cluster (mỗi node hold thêm replica data).
+
+Ví dụ: 10M vectors, replica=2:
+
+Cluster RAM = 10 × 6 × 2 + 8 = 128 GB ≈ 130-150 GB (làm tròn bảo thủ)
+→ 5 VMs × 32GB hoặc 4 VMs × 48GB
+
+7.3 SSD
+
+~5-6 KB/vector (1024d), tương đương ~11 GB cluster SSD / 1M vectors (đã bao gồm replica=2).Production khuyến nghị cấp phát 2.5-3× actual (WAL, snapshot, segment merge, growth).
+
+Cluster SSD (R=2) ≈ (Vectors / 1M) × 11 GB
+SSD khuyến nghị   ≈ Cluster SSD × 2.5-3
+
+Ví dụ: 10M vectors:
+
+Cluster SSD (R=2) = 10 × 11 = ~110 GB
+SSD khuyến nghị  = 110 × 2.5-3 = ~275-330 GB → cấp 300 GB cluster
+
+7.4 Bảng Quick Lookup (D=1024, R=2)
+
+Vectors
+
+Cluster RAM
+
+Cluster SSD (R=2)
+
+SSD khuyến nghị (×2.5-3)
+
+VMs
+
+2M
+
+~32 GB
+
+~22 GB
+
+60 GB
+
+3 × 16GB (minimum cluster)
+
+5M
+
+~68 GB
+
+~55 GB
+
+150 GB
+
+3 × 32GB
+
+8M
+
+~104 GB
+
+~88 GB
+
+250 GB
+
+4 × 32GB
+
+10M
+
+~128 GB
+
+~110 GB
+
+300 GB
+
+5 × 32GB (hoặc 4 × 48GB)
+
+20M
+
+~248 GB
+
+~220 GB
+
+600 GB
+
+6 × 48GB
+
+Bảng mang tính ước lượng sơ bộ. Cấu hình cuối cùng cần benchmark thực tế.SSD khuyến nghị = actual × 2.5-3× (WAL + snapshot + segment merge + growth).
+
+7.5 Growth Projection
+
+Tăng trưởng: ~200 VB/tháng × ~50 vectors/VB ≈ ~120K vectors/năm.
+
+Lưu ý quan trọng: Dung lượng 8-10M vectors chủ yếu đến từ dữ liệu lịch sử(~180.000 văn bản) và quá trình indexing ban đầu. Khối lượng phát sinh mới hằng nămrất nhỏ (~120K vectors/năm). Do đó sau khi hoàn tất indexing ban đầu, nhu cầu mở rộngchủ yếu đến từ việc bổ sung nguồn dữ liệu mới hoặc tăng số lượng embedding/chunktrên mỗi tài liệu.
+
+→ Hạ tầng cho 10M vectors đủ dùng rất nhiều năm sau go-live.
+
+8. Cấu hình hạ tầng VM
+
+8.1 Đề xuất cho 8-10M vectors
+
+Thông số
+
+Giá trị
+
+Ghi chú
+
+Số VMs
+
+4-5
+
+3 = minimum HA, 4 = recommended, 5 = large production
+
+CPU/VM
+
+8-16 vCPU
+
+HNSW search cần CPU
+
+RAM/VM
+
+32-48 GB
+
+5×32GB hoặc 4×48GB cho ~130GB cluster
+
+SSD/VM
+
+100 GB
+
+Tổng ~400-500GB cluster (bao gồm dự phòng snapshot, WAL, mở rộng, vận hành)
+
+Network
+
+≥ 1 Gbps (khuyến nghị 10 Gbps nếu cluster lớn hoặc lưu lượng replication cao)
+
+
+
+OS
+
+Ubuntu 22.04 LTS
+
+
+
+Qdrant
+
+≥ 1.12
+
+
+
+8.2 Storage Strategy: Mmap + INT8
+
+Layer
+
+Lưu ở đâu
+
+Nội dung
+
+RAM
+
+Memory
+
+Quantized vectors (INT8) + HNSW graph
+
+SSD (mmap)
+
+Disk
+
+Original float32 vectors
+
+SSD (storage)
+
+Disk
+
+Payload + WAL + snapshots
+
+Latency kỳ vọng: P95 ~30-100ms per search (không bao gồm embedding generation)Điều kiện tham chiếu: ANN search trên tập 8-10M vectors, HNSW + INT8 + mmap.Phụ thuộc: top_k, filter complexity, hardware. Đây là estimation, không phải SLA.
+
+PHẦN C – CHIẾN LƯỢC SHARD & REPLICA (chi tiết)
+
+9. Kiến trúc phân tán Qdrant
+
+9.1 Cấu trúc phân cấp
+
+Qdrant Cluster
+  └── Collection "smart_search"
+        ├── Named vectors: "dense" (1024d) + "sparse"
+        ├── 4-8 Shards (chia ngang data)
+        │     └── 2 Replicas/shard (Replication Factor = 2)
+        │           └── Segments (auto-managed)
+        └── Payload indexes (doc_status, domain, departments)
+
+9.2 Shard – tại sao cần?
+
+1 node (không cluster)
+
+Multi-node cluster (4 nodes)
+
+10M vectors trên 1 node → RAM ~130GB
+
+Chia 4 shards = 2.5M/shard → ~32GB/node
+
+Throughput bị giới hạn 1 CPU
+
+Search song song 4 shards
+
+Single point of failure
+
+HA: mất 1 node → cluster vẫn phục vụ
+
+Cho 10M vectors: khuyến nghị 4-8 shards để cân bằng giữa:
+
+Parallel search (cải thiện khả năng xử lý song song; quá nhiều shard có thể tăng merge overhead)
+
+RAM/node (ít shard = mỗi node chứa nhiều hơn)
+
+Metadata overhead (quá nhiều shard = overhead quản lý tăng)
+
+Khuyến nghị ban đầu: 4 shards (1 shard/node trên cluster 4 nodes).Có thể tăng lên 8 shards nếu cần scale throughput sau go-live.
+
+9.3 Replica – tại sao cần?
+
+Mỗi shard có 2 replicas (Replication Factor = 2), được phân bố trên các node khác nhau để đảm bảo High Availability. Việc ghi được điều phối bởi cơ chế đồng thuận và đồng bộ dữ liệu của Qdrant Cluster.
+
+Khi một node gặp sự cố:
+
+Replica còn lại trên node khác tiếp tục phục vụ shard
+
+Cluster tự đồng bộ lại khi node phục hồi hoặc node mới tham gia
+
+Query có thể được phân phối tới các replica của shard để tăng khả năng xử lý đọc và cân bằng tải
+
+10. Từ Documents đến Nodes – Sơ đồ tổng hợp
+
+180.000 documents
+        │
+        ▼
+Chunking + Embedding (BGE-M3)
+        │
+        ▼
+~10M vectors (dense + sparse)
+        │
+        ▼
+Collection "smart_search"
+        │
+        ▼
+4 shards (chia đều data)
+        │
+        ▼
+Replication Factor = 2
+        │
+        ▼
+8 shard copies (4 shards × 2 replicas)
+        │
+        ▼
+Phân bố trên 4 Nodes (4 VMs × 48GB RAM × 100GB SSD)
+
+11. Phân bổ trên cluster (4 nodes, 4 shards, R=2)
+
+┌─────────────────────────────────────────────────────────────┐
+│              QDRANT CLUSTER (4 VMs × 48GB)                   │
+├─────────────────────────────────────────────────────────────┤
+│                                                              │
+│  ┌──────────────┐  ┌──────────────┐                         │
+│  │    NODE 1    │  │    NODE 2    │                         │
+│  │ Shard 0 (A)  │  │ Shard 1 (A)  │   A, B = Copy A, Copy B│
+│  │ Shard 3 (B)  │  │ Shard 0 (B)  │   Cả 2 đều phục vụ đọc │
+│  │ ~5M vectors  │  │ ~5M vectors  │                         │
+│  └──────────────┘  └──────────────┘                         │
+│                                                              │
+│  ┌──────────────┐  ┌──────────────┐                         │
+│  │    NODE 3    │  │    NODE 4    │                         │
+│  │ Shard 2 (A)  │  │ Shard 3 (A)  │                         │
+│  │ Shard 1 (B)  │  │ Shard 2 (B)  │                         │
+│  │ ~5M vectors  │  │ ~5M vectors  │                         │
+│  └──────────────┘  └──────────────┘                         │
+│                                                              │
+│  Mỗi node hold: ~5M vector copies                           │
+│  (2 shard replicas × 2.5M vectors ≈ 5M vector copies/node)   │
+│  Mất bất kỳ 1 node → cluster vẫn phục vụ truy vấn bình      │
+│  thường nếu còn đủ replica cho mỗi shard                     │
+└─────────────────────────────────────────────────────────────┘
+
+12. Search song song & Failover
+
+12.1 Search fan-out
+
+Query → Qdrant Cluster
+    ├──► Shard 0 (node 1): search 2.5M vectors → top 100
+    ├──► Shard 1 (node 2): search 2.5M vectors → top 100
+    ├──► Shard 2 (node 3): search 2.5M vectors → top 100
+    └──► Shard 3 (node 4): search 2.5M vectors → top 100
+              │
+              ▼
+        Merge 400 results → top 100 (highest score)
+
+top 100 chỉ là ví dụ, phụ thuộc tham số limit của truy vấn.
+
+12.2 Failover
+
+Node 2 gặp sự cố:→ Replica còn lại của các shard trên node khác tiếp tục phục vụ→ Cluster tự đồng bộ lại khi node 2 phục hồi hoặc node mới tham gia→ Truy vấn không bị gián đoạn
+
+PHẦN D – TRIỂN KHAI STEP-BY-STEP
+
+12. Cài đặt Qdrant Cluster (Docker trên VM)
+
+Step 1: Chuẩn bị mỗi VM
+
+# Mount SSD
+mkdir -p /data/qdrant/storage
+mkdir -p /data/qdrant/config
+mkdir -p /etc/qdrant/tls
+
+# Install Docker (nếu chưa có)
+curl -fsSL https://get.docker.com | sh
+
+Step 2: File config
+
+# /data/qdrant/config/config.yaml
+storage:
+  storage_path: /qdrant/storage
+  performance:
+    optimizers_prefer_ssd: true
+
+service:
+  api_key: "YOUR_64_CHAR_SECURE_KEY"
+  host: "0.0.0.0"
+  grpc_port: 6334
+  enable_tls: true
+  cert_path: /etc/qdrant/tls/cert.pem
+  key_path: /etc/qdrant/tls/key.pem
+
+cluster:
+  enabled: true
+  p2p:
+    port: 6335
+
+Step 3: Khởi động Node 1 (bootstrap)
+
+docker run -d --name qdrant --restart unless-stopped \
+  -p 6333:6333 -p 6334:6334 -p 6335:6335 \
+  -v /data/qdrant/storage:/qdrant/storage \
+  -v /data/qdrant/config/config.yaml:/qdrant/config/production.yaml \
+  -v /etc/qdrant/tls:/etc/qdrant/tls \
+  qdrant/qdrant:v1.12.1
+
+Step 4: Join Node 2, 3, 4
+
+docker run -d --name qdrant --restart unless-stopped \
+  -p 6333:6333 -p 6334:6334 -p 6335:6335 \
+  -v /data/qdrant/storage:/qdrant/storage \
+  -v /data/qdrant/config/config.yaml:/qdrant/config/production.yaml \
+  -v /etc/qdrant/tls:/etc/qdrant/tls \
+  qdrant/qdrant:v1.12.1 \
+  --bootstrap "http://NODE1_IP:6335"
+
+Step 5: Verify cluster
+
+curl -H "api-key: YOUR_KEY" http://NODE1:6333/cluster
+# Expected: 4 peers, status = "enabled"
+
+13. Tạo Collection & Payload Indexes
+
+from qdrant_client import QdrantClient
+from qdrant_client.models import *
+
+client = QdrantClient(url="http://LB:6333", api_key="KEY")
+
+# Tạo collection với named vectors (dense + sparse)
+client.create_collection(
+    collection_name="smart_search",
+    vectors_config={
+        "dense": VectorParams(size=1024, distance=Distance.COSINE, on_disk=True),
+    },
+    sparse_vectors_config={
+        "sparse": SparseVectorParams(),
+    },
+    hnsw_config=HnswConfigDiff(m=16, ef_construct=200),
+    quantization_config=ScalarQuantizationConfig(
+        scalar=ScalarType.INT8, quantile=0.99, always_ram=True,
+    ),
+    shard_number=4,
+    replication_factor=2,
+    write_consistency_factor=1,
+)
+
+# Payload indexes (BẮT BUỘC cho filter nhanh)
+for field in ["doc_status", "domain", "allowed_departments", "allowed_groups", "document_id"]:
+    client.create_payload_index("smart_search", field, PayloadSchemaType.KEYWORD)
+client.create_payload_index("smart_search", "has_user_acl", PayloadSchemaType.BOOL)
+
+14. Bảng lệnh/API quan trọng
+
+REST API (port 6333)
+
+Chức năng
+
+Method
+
+Endpoint
+
+Health check
+
+GET
+
+/healthz
+
+Cluster status
+
+GET
+
+/cluster
+
+Collection info
+
+GET
+
+/collections/smart_search
+
+Upsert points
+
+PUT
+
+/collections/smart_search/points
+
+Search (hybrid)
+
+POST
+
+/collections/smart_search/points/query
+
+Scroll (list)
+
+POST
+
+/collections/smart_search/points/scroll
+
+Delete points
+
+POST
+
+/collections/smart_search/points/delete
+
+Update payload
+
+POST
+
+/collections/smart_search/points/payload
+
+Create snapshot
+
+POST
+
+/collections/smart_search/snapshots
+
+Docker commands
+
+Chức năng
+
+Lệnh
+
+Start/Stop/Restart
+
+docker start/stop/restart qdrant
+
+Logs
+
+docker logs qdrant --tail 100 -f
+
+Status
+
+docker ps | grep qdrant
+
+Resources
+
+docker stats qdrant
+
+15. Ingestion Pipeline
+
+from qdrant_client.models import PointStruct, SparseVector
+import uuid
+
+def ingest(client, chunks, embed_model, batch_size=200):
+    buffer = []
+    for chunk in chunks:
+        dense, sparse = embed_model.encode(chunk["text"])  # BGE-M3 → both
+        buffer.append(PointStruct(
+            id=str(uuid.uuid4()),
+            vector={"dense": dense.tolist(), "sparse": sparse},
+            payload={
+                "document_id": chunk["doc_id"],
+                "title": chunk["title"],
+                "text": chunk["text"],
+                "domain": chunk.get("domain", "general"),
+                "doc_status": "ACTIVE",
+                "allowed_departments": chunk.get("depts", ["ALL"]),
+                "has_user_acl": chunk.get("has_user_acl", False),
+            },
+        ))
+        if len(buffer) >= batch_size:
+            client.upsert("smart_search", points=buffer)
+            buffer = []
+    if buffer:
+        client.upsert("smart_search", points=buffer)
+
+Throughput: batch=200 → ~5.000-10.000 pts/s
+
+16. Search Integration
+
+from qdrant_client.models import *
+
+def search(client, query_text, embed_model, user_depts, top_k=100):
+    dense, sparse = embed_model.encode(query_text)
+    
+    return client.query_points(
+        collection_name="smart_search",
+        prefetch=[
+            Prefetch(query=dense.tolist(), using="dense", limit=200),
+            Prefetch(query=SparseVector(**sparse), using="sparse", limit=100),
+        ],
+        query=FusionQuery(fusion=Fusion.RRF),
+        query_filter=Filter(must=[
+            FieldCondition(key="doc_status", match=MatchValue(value="ACTIVE")),
+            FieldCondition(key="allowed_departments",
+                          match=MatchAny(any=user_depts + ["ALL"])),
+        ]),
+        limit=top_k,
+        with_payload=True,
+    )
+
+PHẦN E – SECURITY
+
+17. Bảo mật hệ thống
+
+#
+
+Biện pháp
+
+Cách thực hiện
+
+Bắt buộc?
+
+1
+
+API Key Authentication
+
+service.api_key trong config
+
+✅
+
+2
+
+TLS/HTTPS
+
+enable_tls: true + cert/key
+
+✅
+
+3
+
+Network Isolation
+
+Qdrant chỉ trong private network
+
+✅
+
+4
+
+Firewall
+
+App servers → 6333/6334 ONLY
+
+✅
+
+5
+
+Internal P2P
+
+Nodes ↔ Nodes: 6335 ONLY
+
+✅
+
+6
+
+Key rotation
+
+Đổi key mỗi 3-6 tháng
+
+Khuyến nghị
+
+Firewall rules:
+
+App servers      → Qdrant nodes: TCP 6333, 6334 (ALLOW)
+Qdrant ↔ Qdrant  → Internal:    TCP 6335       (ALLOW)
+Monitoring       → Qdrant:      TCP 6333 /metrics (ALLOW)
+Tất cả khác      → Qdrant:      *              (DENY)
+
+PHẦN F – VẬN HÀNH & KẾ HOẠCH
+
+18. Monitoring & Backup
+
+Monitoring: Qdrant /metrics → Prometheus → Grafana
+
+Alert: latency p95 > 200ms, RAM > 85%, SSD > 80%, peers < expected
+
+Backup:
+
+Daily snapshot: POST /collections/smart_search/snapshots
+
+Retention: 7 ngày local, 30 ngày remote
+
+Replication (real-time): auto via replica nodes
+
+19. Timeline & Checklist
+
+Tuần
+
+Phase
+
+Công việc
+
+1-2
+
+Nghiên cứu + POC
+
+POC 1 node, 10K chunks, test hybrid search
+
+2-3
+
+Hạ tầng
+
+Provision 4 VMs, network, firewall
+
+3-4
+
+Cài đặt
+
+Cluster 4 nodes, collection, security
+
+4-5
+
+Ingestion + Test
+
+Pipeline, nạp data, benchmark, failover
+
+5-6
+
+Integration
+
+Tích hợp API, monitoring, backup, UAT
+
+20. Performance Targets
+
+Chưa phải benchmark thực. Là TARGET cần đạt.
+
+Test
+
+Metric
+
+Target
+
+Search (no filter)
+
+Latency p50
+
+< 50ms
+
+Search + filter
+
+Latency p50
+
+< 80ms
+
+Search + filter
+
+Latency p95
+
+< 150ms
+
+100 concurrent
+
+Throughput
+
+> 200 QPS
+
+500 concurrent
+
+Throughput
+
+> 150 QPS
+
+Batch ingestion
+
+Throughput
+
+> 5000 pts/s
+
+Failover
+
+Recovery
+
+< 5s
+
+Recall
+
+Recall@100
+
+> 95%
+
+21. Rủi ro & Phương án xử lý
+
+Rủi ro
+
+Phương án
+
+RAM không đủ (data tăng)
+
+Quantization đã bật. Scale vertical/horizontal
+
+1 node down
+
+Replica=2, auto failover
+
+Sparse vector recall thấp hơn ES
+
+Benchmark trước. Fallback: thêm ES nếu cần
+
+Ingestion chậm (bottleneck embed)
+
+Parallel embedding, GPU inference
+
+SSD đầy
+
+Alert 80%, expand disk
+
+PHỤ LỤC
+
+A. Kiến thức nền
+
+Vector/Embedding: Text → mảng N số (N = dimension). Texts cùng ý nghĩa → vectors gần nhau.
+
+HNSW: Graph algorithm tìm nearest neighbor nhanh (~50ms cho 10M vectors thay vì ~10s brute force). Trade-off: approximate (~99% recall).
+
+Scalar Quantization: Nén float32 → int8. Giảm RAM 4x, mất <1% recall.
+
+Sparse Vectors: Giống BM25 inverted index nhưng dưới dạng vector. Bắt keyword chính xác.
+
+B. Tài liệu tham khảo
+
+#
+
+Tài liệu
+
+URL
+
+1
+
+Qdrant Official Docs
+
+https://qdrant.tech/documentation/
+
+2
+
+Qdrant Hybrid Search
+
+https://qdrant.tech/documentation/concepts/hybrid-queries/
+
+3
+
+Qdrant Distributed Deployment
+
+https://qdrant.tech/documentation/guides/distributed_deployment/
+
+4
+
+Qdrant Quantization
+
+https://qdrant.tech/documentation/guides/quantization/
+
+5
+
+Qdrant Capacity Sizing
+
+https://qdrant.tech/documentation/cloud/capacity-sizing/
+
+6
+
+BGE-M3 Model
+
+https://huggingface.co/BAAI/bge-m3
+
+7
+
+Slide Smart-Search v3.4
+
+Tài liệu nội bộ TPBank
+
+Hết báo cáo v2.
