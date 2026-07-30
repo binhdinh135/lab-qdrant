@@ -1,0 +1,452 @@
+PS D:\Qdrant\local-poc> cd D:\Qdrant\demo-local
+>> docker compose up -d
+[+] Running 2/2
+ ✔ Network demo-local_default  Created                                                                                                                                                                        0.0s
+ ✔ Container qdrant-demo       Started                                                                                                                                                                        0.4s
+PS D:\Qdrant\demo-local> docker compose ps
+NAME          IMAGE                   COMMAND             SERVICE   CREATED         STATUS         PORTS
+qdrant-demo   qdrant/qdrant:v1.12.0   "./entrypoint.sh"   qdrant    6 seconds ago   Up 9 seconds   0.0.0.0:6333-6334->6333-6334/tcp, [::]:6333-6334->6333-6334/tcp
+PS D:\Qdrant\demo-local> Invoke-RestMethod -Uri "http://localhost:6333/healthz"
+healthz check passed
+PS D:\Qdrant\demo-local> Invoke-RestMethod -Uri "http://localhost:6333"
+
+title                         version commit
+-----                         ------- ------
+qdrant - vector search engine 1.12.0  a0d2eccac0c179116214e7cb3583359c80d41998
+
+
+PS D:\Qdrant\demo-local> $body = @{
+>>     vectors = @{
+>>         dense = @{
+>>             size = 384
+>>             distance = "Cosine"
+>>         }
+>>     }
+>>     shard_number = 1
+>>     replication_factor = 1
+>> } | ConvertTo-Json -Depth 5
+>>
+>> Invoke-RestMethod -Method Put -Uri "http://localhost:6333/collections/smart_search_demo" -ContentType "application/json" -Body $body
+
+result status        time
+------ ------        ----
+  True ok     0.348270802
+
+
+PS D:\Qdrant\demo-local> Invoke-RestMethod -Uri "http://localhost:6333/collections/smart_search_demo"
+
+result                                                                                                                    status        time
+------                                                                                                                    ------        ----
+@{status=green; optimizer_status=ok; indexed_vectors_count=0; points_count=0; segments_count=2; config=; payload_schema=} ok     0.000108585
+
+
+PS D:\Qdrant\demo-local> $fields = @("doc_status", "domain", "department", "doc_type")
+>>
+>> foreach ($field in $fields) {
+>>     $body = @{
+>>         field_name = $field
+>>         field_schema = "keyword"
+>>     } | ConvertTo-Json
+>>
+>>     Invoke-RestMethod -Method Put -Uri "http://localhost:6333/collections/smart_search_demo/index" -ContentType "application/json" -Body $body
+>>     Write-Host "Created index: $field"
+>> }
+
+Created index: doc_status
+Created index: domain
+Created index: department
+Created index: doc_type
+result                                 status        time
+------                                 ------        ----
+@{operation_id=1; status=acknowledged} ok      0.01579015
+@{operation_id=3; status=acknowledged} ok     0.012390619
+@{operation_id=5; status=acknowledged} ok     0.014422039
+@{operation_id=7; status=acknowledged} ok     0.012764657
+
+
+PS D:\Qdrant\demo-local> $json1 = Get-Content -Raw -Path "sample_data\points_batch_01.json"
+>> Invoke-RestMethod -Method Put -Uri "http://localhost:6333/collections/smart_search_demo/points?wait=true" -ContentType "application/json" -Body $json1
+>>
+>> # Batch 2: domain cong_nghe + hanh_chinh (6 points)
+>> $json2 = Get-Content -Raw -Path "sample_data\points_batch_02.json"
+>> Invoke-RestMethod -Method Put -Uri "http://localhost:6333/collections/smart_search_demo/points?wait=true" -ContentType "application/json" -Body $json2
+>> ```
+>>
+>> Kiểm tra số lượng points:
+>> ```powershell
+>> (Invoke-RestMethod -Uri "http://localhost:6333/collections/smart_search_demo").result.points_count
+
+result                              status        time
+------                              ------        ----
+@{operation_id=8; status=completed} ok     0.030157158
+@{operation_id=9; status=completed} ok     0.019948901
+`
+ : The term '`
+' is not recognized as the name of a cmdlet, function, script file, or operable program. Check the spelling of the name, or if a path was included, verify that the path is correct and try again.
+At line:7 char:1
++ ```
++ ~~~
+    + CategoryInfo          : ObjectNotFound: (`
+:String) [], CommandNotFoundException
+    + FullyQualifiedErrorId : CommandNotFoundException
+
+Kiểm : The term 'Kiểm' is not recognized as the name of a cmdlet, function, script file, or operable program. Check the spelling of the name, or if a path was included, verify that the path is correct and try
+again.
+At line:9 char:1
++ Kiểm tra số lượng points:
++ ~~~~
+    + CategoryInfo          : ObjectNotFound: (Kiểm:String) [], CommandNotFoundException
+    + FullyQualifiedErrorId : CommandNotFoundException
+
+`powershell : The term '`powershell' is not recognized as the name of a cmdlet, function, script file, or operable program. Check the spelling of the name, or if a path was included, verify that the path is
+correct and try again.
+At line:10 char:1
++ ```powershell
++ ~~~~~~~~~~~~~
+    + CategoryInfo          : ObjectNotFound: (`powershell:String) [], CommandNotFoundException
+    + FullyQualifiedErrorId : CommandNotFoundException
+
+12
+
+
+PS D:\Qdrant\demo-local> $query = Get-Content -Raw -Path "queries\search_basic.json"
+>> Invoke-RestMethod -Method Post -Uri "http://localhost:6333/collections/smart_search_demo/points/query" -ContentType "application/json" -Body $query | ConvertTo-Json -Depth 10
+{
+    "result":  {
+                   "points":  [
+                                  {
+                                      "id":  10,
+                                      "version":  9,
+                                      "score":  0.120049395,
+                                      "payload":  {
+                                                      "document_id":  "DOC-009",
+                                                      "title":  "Quy trinh deploy Production",
+                                                      "domain":  "cong_nghe",
+                                                      "department":  "CNTT",
+                                                      "doc_type":  "quy_trinh",
+                                                      "doc_status":  "ACTIVE",
+                                                      "text":  "Deploy production chi thuc hien 22h-6h hoac cuoi tuan. Can CAB approval truoc 48h."
+                                                  }
+                                  },
+                                  {
+                                      "id":  11,
+                                      "version":  9,
+                                      "score":  0.088837,
+                                      "payload":  {
+                                                      "document_id":  "DOC-010",
+                                                      "title":  "Quy dinh su dung VPN",
+                                                      "domain":  "cong_nghe",
+                                                      "department":  "ALL",
+                                                      "doc_type":  "quy_dinh",
+                                                      "doc_status":  "ACTIVE",
+                                                      "text":  "VPN bat buoc khi truy cap he thong noi bo tu ben ngoai. Dung GlobalProtect."
+                                                  }
+                                  },
+                                  {
+                                      "id":  2,
+                                      "version":  8,
+                                      "score":  0.07027188,
+                                      "payload":  {
+                                                      "document_id":  "DOC-001",
+                                                      "title":  "Quy dinh nghi phep nam 2024",
+                                                      "domain":  "nhan_su",
+                                                      "department":  "BAN_LE",
+                                                      "doc_type":  "quy_dinh",
+                                                      "doc_status":  "ACTIVE",
+                                                      "text":  "Nhan vien co tham nien tren 5 nam duoc cong them 1 ngay phep."
+                                                  }
+                                  },
+                                  {
+                                      "id":  1,
+                                      "version":  8,
+                                      "score":  0.06854092,
+                                      "payload":  {
+                                                      "document_id":  "DOC-001",
+                                                      "title":  "Quy dinh nghi phep nam 2024",
+                                                      "domain":  "nhan_su",
+                                                      "department":  "BAN_LE",
+                                                      "doc_type":  "quy_dinh",
+                                                      "doc_status":  "ACTIVE",
+                                                      "text":  "Nhan vien duoc nghi phep 12 ngay moi nam. Phep nam tinh tu 1/1 den 31/12."
+                                                  }
+                                  },
+                                  {
+                                      "id":  5,
+                                      "version":  8,
+                                      "score":  0.046845645,
+                                      "payload":  {
+                                                      "document_id":  "DOC-004",
+                                                      "title":  "Quy dinh danh gia KPI",
+                                                      "domain":  "nhan_su",
+                                                      "department":  "ALL",
+                                                      "doc_type":  "quy_dinh",
+                                                      "doc_status":  "ACTIVE",
+                                                      "text":  "KPI duoc danh gia vao tuan cuoi moi quy. Ket qua phan loai 5 muc."
+                                                  }
+                                  }
+                              ]
+               },
+    "status":  "ok",
+    "time":  0.002235719
+}
+PS D:\Qdrant\demo-local> $query = Get-Content -Raw -Path "queries\search_filter_domain.json"
+>> Invoke-RestMethod -Method Post -Uri "http://localhost:6333/collections/smart_search_demo/points/query" -ContentType "application/json" -Body $query | ConvertTo-Json -Depth 10
+{
+    "result":  {
+                   "points":  [
+                                  {
+                                      "id":  9,
+                                      "version":  9,
+                                      "score":  0.13979244,
+                                      "payload":  {
+                                                      "document_id":  "DOC-008",
+                                                      "title":  "Huong dan su dung eISO",
+                                                      "domain":  "cong_nghe",
+                                                      "department":  "ALL",
+                                                      "doc_type":  "huong_dan",
+                                                      "doc_status":  "ACTIVE",
+                                                      "text":  "Dang nhap he thong eISO bang tai khoan AD. Quen mat khau lien he helpdesk."
+                                                  }
+                                  },
+                                  {
+                                      "id":  11,
+                                      "version":  9,
+                                      "score":  0.04921663,
+                                      "payload":  {
+                                                      "document_id":  "DOC-010",
+                                                      "title":  "Quy dinh su dung VPN",
+                                                      "domain":  "cong_nghe",
+                                                      "department":  "ALL",
+                                                      "doc_type":  "quy_dinh",
+                                                      "doc_status":  "ACTIVE",
+                                                      "text":  "VPN bat buoc khi truy cap he thong noi bo tu ben ngoai. Dung GlobalProtect."
+                                                  }
+                                  },
+                                  {
+                                      "id":  10,
+                                      "version":  9,
+                                      "score":  0.044091165,
+                                      "payload":  {
+                                                      "document_id":  "DOC-009",
+                                                      "title":  "Quy trinh deploy Production",
+                                                      "domain":  "cong_nghe",
+                                                      "department":  "CNTT",
+                                                      "doc_type":  "quy_trinh",
+                                                      "doc_status":  "ACTIVE",
+                                                      "text":  "Deploy production chi thuc hien 22h-6h hoac cuoi tuan. Can CAB approval truoc 48h."
+                                                  }
+                                  },
+                                  {
+                                      "id":  7,
+                                      "version":  9,
+                                      "score":  -0.011515399,
+                                      "payload":  {
+                                                      "document_id":  "DOC-006",
+                                                      "title":  "Chinh sach bao mat thong tin",
+                                                      "domain":  "cong_nghe",
+                                                      "department":  "CNTT",
+                                                      "doc_type":  "chinh_sach",
+                                                      "doc_status":  "ACTIVE",
+                                                      "text":  "Moi nhan vien phai su dung mat khau manh co it nhat 12 ky tu."
+                                                  }
+                                  },
+                                  {
+                                      "id":  8,
+                                      "version":  9,
+                                      "score":  -0.06889442,
+                                      "payload":  {
+                                                      "document_id":  "DOC-007",
+                                                      "title":  "Quy trinh xu ly su co he thong",
+                                                      "domain":  "cong_nghe",
+                                                      "department":  "CNTT",
+                                                      "doc_type":  "quy_trinh",
+                                                      "doc_status":  "ACTIVE",
+                                                      "text":  "Su co phan loai 4 muc: P1 Critical, P2 High, P3 Medium, P4 Low."
+                                                  }
+                                  }
+                              ]
+               },
+    "status":  "ok",
+    "time":  0.00155578
+}
+PS D:\Qdrant\demo-local>
+PS D:\Qdrant\demo-local> $query = Get-Content -Raw -Path "queries\search_filter_department.json"
+>> Invoke-RestMethod -Method Post -Uri "http://localhost:6333/collections/smart_search_demo/points/query" -ContentType "application/json" -Body $query | ConvertTo-Json -Depth 10
+{
+    "result":  {
+                   "points":  [
+                                  {
+                                      "id":  3,
+                                      "version":  8,
+                                      "score":  0.018810531,
+                                      "payload":  {
+                                                      "document_id":  "DOC-002",
+                                                      "title":  "Quy trinh tuyen dung nhan su",
+                                                      "domain":  "nhan_su",
+                                                      "department":  "NHAN_SU",
+                                                      "doc_type":  "quy_trinh",
+                                                      "doc_status":  "ACTIVE",
+                                                      "text":  "Quy trinh tuyen dung gom 5 buoc: De xuat, Dang tin, Sang loc, Phong van, Quyet dinh."
+                                                  }
+                                  }
+                              ]
+               },
+    "status":  "ok",
+    "time":  0.001154602
+}
+
+PS D:\Qdrant\demo-local> $query = Get-Content -Raw -Path "queries\search_multi_filter.json"
+>> Invoke-RestMethod -Method Post -Uri "http://localhost:6333/collections/smart_search_demo/points/query" -ContentType "application/json" -Body $query | ConvertTo-Json -Depth 10
+{
+    "result":  {
+                   "points":  [
+                                  {
+                                      "id":  10,
+                                      "version":  9,
+                                      "score":  0.033464856,
+                                      "payload":  {
+                                                      "document_id":  "DOC-009",
+                                                      "title":  "Quy trinh deploy Production",
+                                                      "domain":  "cong_nghe",
+                                                      "department":  "CNTT",
+                                                      "doc_type":  "quy_trinh",
+                                                      "doc_status":  "ACTIVE",
+                                                      "text":  "Deploy production chi thuc hien 22h-6h hoac cuoi tuan. Can CAB approval truoc 48h."
+                                                  }
+                                  },
+                                  {
+                                      "id":  8,
+                                      "version":  9,
+                                      "score":  -0.003684571,
+                                      "payload":  {
+                                                      "document_id":  "DOC-007",
+                                                      "title":  "Quy trinh xu ly su co he thong",
+                                                      "domain":  "cong_nghe",
+                                                      "department":  "CNTT",
+                                                      "doc_type":  "quy_trinh",
+                                                      "doc_status":  "ACTIVE",
+                                                      "text":  "Su co phan loai 4 muc: P1 Critical, P2 High, P3 Medium, P4 Low."
+                                                  }
+                                  }
+                              ]
+               },
+    "status":  "ok",
+    "time":  0.00108169
+}
+>> Invoke-RestMethod -Method Post -Uri "http://localhost:6333/collections/smart_search_demo/points/scroll" -ContentType "application/json" -Body $body | ConvertTo-Json -Depth 10
+{
+    "result":  {
+                   "points":  [
+                                  {
+                                      "id":  1,
+                                      "payload":  {
+                                                      "document_id":  "DOC-001",
+                                                      "title":  "Quy dinh nghi phep nam 2024",
+                                                      "domain":  "nhan_su",
+                                                      "department":  "BAN_LE",
+                                                      "doc_type":  "quy_dinh",
+                                                      "doc_status":  "ACTIVE",
+                                                      "text":  "Nhan vien duoc nghi phep 12 ngay moi nam. Phep nam tinh tu 1/1 den 31/12."
+                                                  }
+                                  },
+                                  {
+                                      "id":  2,
+                                      "payload":  {
+                                                      "document_id":  "DOC-001",
+                                                      "title":  "Quy dinh nghi phep nam 2024",
+                                                      "domain":  "nhan_su",
+                                                      "department":  "BAN_LE",
+                                                      "doc_type":  "quy_dinh",
+                                                      "doc_status":  "ACTIVE",
+                                                      "text":  "Nhan vien co tham nien tren 5 nam duoc cong them 1 ngay phep."
+                                                  }
+                                  },
+                                  {
+                                      "id":  3,
+                                      "payload":  {
+                                                      "document_id":  "DOC-002",
+                                                      "title":  "Quy trinh tuyen dung nhan su",
+                                                      "domain":  "nhan_su",
+                                                      "department":  "NHAN_SU",
+                                                      "doc_type":  "quy_trinh",
+                                                      "doc_status":  "ACTIVE",
+                                                      "text":  "Quy trinh tuyen dung gom 5 buoc: De xuat, Dang tin, Sang loc, Phong van, Quyet dinh."
+                                                  }
+                                  },
+                                  {
+                                      "id":  4,
+                                      "payload":  {
+                                                      "document_id":  "DOC-003",
+                                                      "title":  "Chinh sach lam viec tu xa WFH",
+                                                      "domain":  "nhan_su",
+                                                      "department":  "ALL",
+                                                      "doc_type":  "chinh_sach",
+                                                      "doc_status":  "ACTIVE",
+                                                      "text":  "Nhan vien duoc dang ky WFH toi da 2 ngay moi tuan."
+                                                  }
+                                  },
+                                  {
+                                      "id":  5,
+                                      "payload":  {
+                                                      "document_id":  "DOC-004",
+                                                      "title":  "Quy dinh danh gia KPI",
+                                                      "domain":  "nhan_su",
+                                                      "department":  "ALL",
+                                                      "doc_type":  "quy_dinh",
+                                                      "doc_status":  "ACTIVE",
+                                                      "text":  "KPI duoc danh gia vao tuan cuoi moi quy. Ket qua phan loai 5 muc."
+                                                  }
+                                  }
+                              ],
+                   "next_page_offset":  6
+               },
+    "status":  "ok",
+    "time":  0.001088157
+}
+PS D:\Qdrant\demo-local> $body = @{
+>>     payload = @{ doc_status = "ARCHIVED" }
+>>     points = @(1, 2, 3)
+>> } | ConvertTo-Json -Depth 3
+>>
+>> Invoke-RestMethod -Method Post -Uri "http://localhost:6333/collections/smart_search_demo/points/payload" -ContentType "application/json" -Body $body
+
+result                                  status        time
+------                                  ------        ----
+@{operation_id=10; status=acknowledged} ok     0.001005832
+PS D:\Qdrant\demo-local> $body = @{
+>>     payload = @{ doc_status = "ARCHIVED" }
+>>     points = @(1, 2, 3)
+>> } | ConvertTo-Json -Depth 3
+>>
+>> Invoke-RestMethod -Method Post -Uri "http://localhost:6333/collections/smart_search_demo/points/payload" -ContentType "application/json" -Body $body
+
+result                                  status        time
+------                                  ------        ----
+@{operation_id=10; status=acknowledged} ok     0.001005832
+
+
+PS D:\Qdrant\demo-local> $body = @{
+>>     points = @(1, 2, 3)
+>> } | ConvertTo-Json
+>>
+>> Invoke-RestMethod -Method Post -Uri "http://localhost:6333/collections/smart_search_demo/points/delete" -ContentType "application/json" -Body $body
+
+result                                  status        time
+------                                  ------        ----
+@{operation_id=11; status=acknowledged} ok     0.000765722
+PS D:\Qdrant\demo-local> Invoke-RestMethod -Method Post -Uri "http://localhost:6333/collections/smart_search_demo/snapshots"
+
+result                                                                                                                                                                                                status  time
+------                                                                                                                                                                                                ------  ----
+@{name=smart_search_demo-2848121824292700-2026-07-29-07-41-28.snapshot; creation_time=2026-07-29T07:41:34; size=136512000; checksum=5aaa069c21a30d789ac7eb135934f0a95374933eb2bbd7f556bd3bb7090a2dad} ok     ...37
+PS D:\Qdrant\demo-local> Invoke-RestMethod -Uri "http://localhost:6333/collections/smart_search_demo/snapshots"
+
+result                                                                                                                                                                                                  status tim
+                                                                                                                                                                                                                 e
+------                                                                                                                                                                                                  ------ ---
+{@{name=smart_search_demo-2848121824292700-2026-07-29-07-41-28.snapshot; creation_time=2026-07-29T07:41:34; size=136512000; checksum=5aaa069c21a30d789ac7eb135934f0a95374933eb2bbd7f556bd3bb7090a2dad}} ok     484
+PS D:\Qdrant\demo-local> Invoke-RestMethod -Method Delete -Uri "http://localhost:6333/collections/smart_search_demo"
+
+result status        time
+------ ------        ----
+  True ok     0.031731892

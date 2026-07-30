@@ -1,0 +1,1 @@
+{"indexed_fields":{"description":{"type":"text","tokenizer":"word","lowercase":true}}}
