@@ -1,0 +1,714 @@
+<!DOCTYPE html>
+<html lang="vi" class="h-full bg-slate-50">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Smart Search Internal Assistant - POC Demo UI</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Font Awesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Inter Font -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    },
+                    colors: {
+                        bank: {
+                            50: '#f0f7ff',
+                            100: '#e0effe',
+                            500: '#0284c7',
+                            600: '#0369a1',
+                            700: '#075985',
+                            800: '#0c4a6e',
+                            900: '#0a3651'
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        /* Custom scrollbar for clean UI */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #f1f5f9;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8;
+        }
+    </style>
+</head>
+<body class="h-full flex flex-col text-slate-800 antialiased font-sans">
+    <!-- Top Header -->
+    <header class="bg-bank-900 text-white border-b border-bank-800 px-4 py-3 flex items-center justify-between shadow-md shrink-0">
+        <div class="flex items-center gap-3">
+            <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-blue-600 to-indigo-500 flex items-center justify-center text-white font-bold text-xl shadow-inner">
+                <i class="fa-solid fa-brain"></i>
+            </div>
+            <div>
+                <div class="flex items-center gap-2">
+                    <h1 class="font-bold text-lg leading-tight tracking-wide">Smart Search Assistant</h1>
+                    <span class="bg-blue-500/30 text-blue-200 text-xs px-2 py-0.5 rounded-full font-medium border border-blue-400/30">POC 2 MD</span>
+                </div>
+                <p class="text-xs text-slate-300">Qdrant Vector DB + LangChain Orchestrator + Conversation Memory</p>
+            </div>
+        </div>
+
+        <!-- Connection Settings & Status -->
+        <div class="flex items-center gap-4 text-xs">
+            <div class="hidden sm:flex items-center bg-bank-800 px-3 py-1.5 rounded-lg border border-bank-700">
+                <span class="text-slate-400 mr-2">Mode:</span>
+                <select id="execution-mode" onchange="toggleMode()" class="bg-transparent text-white font-semibold focus:outline-none cursor-pointer">
+                    <option value="mock" class="bg-slate-800 text-white">Browser Simulator (Standalone)</option>
+                    <option value="api" class="bg-slate-800 text-white">FastAPI Backend (http://localhost:8000)</option>
+                </select>
+            </div>
+
+            <div class="flex items-center gap-2 bg-slate-800/80 px-3 py-1.5 rounded-lg border border-slate-700">
+                <span id="status-indicator" class="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse"></span>
+                <span id="status-text" class="font-medium text-slate-200">Local Engine Ready</span>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content Container -->
+    <div class="flex-1 flex overflow-hidden">
+
+        <!-- Left Sidebar: Quick Scenarios & Knowledge Explorer -->
+        <aside class="w-80 bg-white border-r border-slate-200 flex flex-col shrink-0 hidden md:flex">
+            <!-- Session Controls -->
+            <div class="p-4 border-b border-slate-100 bg-slate-50/50">
+                <div class="flex items-center justify-between mb-2">
+                    <label class="text-xs font-semibold text-slate-500 uppercase tracking-wider">Phiên làm việc (Session ID)</label>
+                    <button onclick="createNewSession()" class="text-xs text-bank-600 hover:text-bank-800 font-medium flex items-center gap-1">
+                        <i class="fa-solid fa-rotate-right"></i> Tạo mới
+                    </button>
+                </div>
+                <div class="flex items-center gap-2">
+                    <input type="text" id="session-id-input" value="session_demo_01" readonly class="w-full bg-white border border-slate-300 text-slate-700 text-xs rounded-lg px-3 py-2 font-mono focus:outline-none">
+                </div>
+            </div>
+
+            <!-- Demo Scenarios Buttons -->
+            <div class="p-4 border-b border-slate-100">
+                <h3 class="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-3">
+                    <i class="fa-solid fa-flask text-bank-500 mr-1"></i> 4 Kịch Bản Nghiệm Thu
+                </h3>
+                <div class="space-y-2">
+                    <button onclick="runScenario(0)" class="w-full text-left p-2.5 rounded-xl border border-slate-200 hover:border-blue-500 hover:bg-blue-50 transition-all text-xs group">
+                        <div class="font-semibold text-slate-800 group-hover:text-blue-700 flex items-center justify-between">
+                            <span>0. Chào hỏi / Xã giao</span>
+                            <span class="text-[10px] bg-blue-100 text-blue-700 px-1.5 py-0.5 rounded font-mono">Chitchat</span>
+                        </div>
+                        <p class="text-slate-500 mt-1 line-clamp-1">"Xin chào, bạn giúp gì được cho tôi?"</p>
+                    </button>
+
+                    <button onclick="runScenario(1)" class="w-full text-left p-2.5 rounded-xl border border-slate-200 hover:border-bank-500 hover:bg-bank-50 transition-all text-xs group">
+                        <div class="font-semibold text-slate-800 group-hover:text-bank-700 flex items-center justify-between">
+                            <span>1. Tra cứu có trích dẫn</span>
+                            <span class="text-[10px] bg-slate-100 text-slate-600 px-1.5 py-0.5 rounded font-mono">Knowledge</span>
+                        </div>
+                        <p class="text-slate-500 mt-1 line-clamp-1">"Quy trình mở CIF gồm những bước nào?"</p>
+                    </button>
+
+                    <button onclick="runScenario(2)" class="w-full text-left p-2.5 rounded-xl border border-slate-200 hover:border-emerald-500 hover:bg-emerald-50 transition-all text-xs group">
+                        <div class="font-semibold text-slate-800 group-hover:text-emerald-700 flex items-center justify-between">
+                            <span>2. Tra cứu STK gần đúng</span>
+                            <span class="text-[10px] bg-emerald-100 text-emerald-700 px-1.5 py-0.5 rounded font-mono">Operation</span>
+                        </div>
+                        <p class="text-slate-500 mt-1 line-clamp-1">"1234567"</p>
+                    </button>
+
+                    <button onclick="runScenario(3)" class="w-full text-left p-2.5 rounded-xl border border-slate-200 hover:border-purple-500 hover:bg-purple-50 transition-all text-xs group">
+                        <div class="font-semibold text-slate-800 group-hover:text-purple-700 flex items-center justify-between">
+                            <span>3. Hỏi nối tiếp (Memory)</span>
+                            <span class="text-[10px] bg-purple-100 text-purple-700 px-1.5 py-0.5 rounded font-mono">Context</span>
+                        </div>
+                        <p class="text-slate-500 mt-1 line-clamp-1">"Thời gian xử lý mất bao lâu?"</p>
+                    </button>
+
+                    <button onclick="runScenario(4)" class="w-full text-left p-2.5 rounded-xl border border-slate-200 hover:border-amber-500 hover:bg-amber-50 transition-all text-xs group">
+                        <div class="font-semibold text-slate-800 group-hover:text-amber-700 flex items-center justify-between">
+                            <span>4. Hỏi tài liệu eKYC</span>
+                            <span class="text-[10px] bg-amber-100 text-amber-700 px-1.5 py-0.5 rounded font-mono">Knowledge</span>
+                        </div>
+                        <p class="text-slate-500 mt-1 line-clamp-1">"Đối tượng nào được áp dụng quy định eKYC?"</p>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Tab Switching for Inspectors -->
+            <div class="flex border-b border-slate-200 text-xs font-medium">
+                <button onclick="switchTab('docs')" id="tab-docs-btn" class="flex-1 py-2.5 text-center text-bank-600 border-b-2 border-bank-600 font-semibold">
+                    <i class="fa-solid fa-database mr-1"></i> Kho Docs (10)
+                </button>
+                <button onclick="switchTab('memory')" id="tab-memory-btn" class="flex-1 py-2.5 text-center text-slate-500 hover:text-slate-700">
+                    <i class="fa-solid fa-clock-rotate-left mr-1"></i> Memory Cache
+                </button>
+            </div>
+
+            <!-- Docs / Memory List View -->
+            <div class="flex-1 overflow-y-auto p-3 text-xs">
+                <!-- Documents View -->
+                <div id="tab-docs-content" class="space-y-2">
+                    <p class="text-[11px] text-slate-400 mb-2">Tài liệu đã index sẵn vào Qdrant Collection <code class="bg-slate-100 px-1 rounded">internal_docs</code>:</p>
+                    <div id="docs-list" class="space-y-2">
+                        <!-- Inserted dynamically via JS -->
+                    </div>
+                </div>
+
+                <!-- Memory View -->
+                <div id="tab-memory-content" class="hidden space-y-2">
+                    <p class="text-[11px] text-slate-400 mb-2">Lịch sử cuộc hội thoại hiện tại lưu trong RAM Backend:</p>
+                    <div id="memory-list" class="space-y-2">
+                        <div class="text-slate-400 text-center py-6 italic">Chưa có dữ liệu hội thoại trong phiên này.</div>
+                    </div>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Center Chat Section -->
+        <main class="flex-1 flex flex-col bg-slate-100 relative">
+            <!-- Chat Scroll Area -->
+            <div id="chat-messages" class="flex-1 overflow-y-auto p-4 sm:p-6 space-y-6">
+                <!-- Welcome Banner -->
+                <div class="max-w-3xl mx-auto bg-white rounded-2xl p-5 border border-slate-200/80 shadow-sm text-center">
+                    <div class="w-12 h-12 bg-bank-50 text-bank-600 rounded-full flex items-center justify-center mx-auto mb-3 text-xl">
+                        <i class="fa-solid fa-robot"></i>
+                    </div>
+                    <h2 class="text-base font-bold text-slate-800 mb-1">Trợ Lý Hỏi Đáp Quy Trình & Tra Cứu Tác Nghiệp</h2>
+                    <p class="text-xs text-slate-500 max-w-md mx-auto mb-4">
+                        Tự động phân loại câu hỏi Tri thức (RAG với Qdrant Vector Store) hoặc Tra cứu Tác nghiệp (Số tài khoản/Tài sản).
+                    </p>
+                    <div class="flex flex-wrap justify-center gap-2">
+                        <span class="inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-medium bg-slate-100 text-slate-600">
+                            <i class="fa-solid fa-check text-emerald-500 mr-1.5"></i> Trích dẫn Nguồn
+                        </span>
+                        <span class="inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-medium bg-slate-100 text-slate-600">
+                            <i class="fa-solid fa-check text-emerald-500 mr-1.5"></i> Điểm Tin Cậy (Confidence)
+                        </span>
+                        <span class="inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-medium bg-slate-100 text-slate-600">
+                            <i class="fa-solid fa-check text-emerald-500 mr-1.5"></i> Nhớ Ngữ Cảnh Nối Tiếp
+                        </span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Input Bar -->
+            <div class="p-3 sm:p-4 bg-white border-t border-slate-200 shadow-lg">
+                <div class="max-w-3xl mx-auto">
+                    <form onsubmit="handleSend(event)" class="relative flex items-center">
+                        <input type="text" id="user-input" placeholder="Nhập câu hỏi quy trình (ví dụ: Quy trình mở CIF) hoặc STK (ví dụ: 1234567)..." 
+                            class="w-full bg-slate-100 text-slate-800 text-sm rounded-2xl pl-4 pr-24 py-3.5 border border-slate-200 focus:outline-none focus:border-bank-500 focus:bg-white transition-all shadow-inner">
+                        
+                        <div class="absolute right-2 flex items-center gap-1">
+                            <button type="submit" id="send-btn" class="bg-bank-600 hover:bg-bank-700 text-white rounded-xl px-4 py-2 text-xs font-semibold flex items-center gap-1.5 transition-all shadow-md">
+                                <span>Gửi</span>
+                                <i class="fa-solid fa-paper-plane"></i>
+                            </button>
+                        </div>
+                    </form>
+                    <div class="flex justify-between items-center mt-2 px-1 text-[11px] text-slate-400">
+                        <span>Tip: Nhấn nút bên trái sidebar để chạy nhanh kịch bản demo.</span>
+                        <span class="font-mono">API: <span id="api-endpoint-display" class="text-slate-600">Mock Engine</span></span>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        // ==========================================
+        // 1. MOCK DATA & LOCAL SIMULATOR DATABASE
+        // ==========================================
+        const MOCK_DOCUMENTS = [
+            { id: 1, document: "QuyTrinh_CIF.md", section: "3.1", title: "Khái niệm CIF", text: "Khái niệm CIF: CIF là mã định danh khách hàng duy nhất trên hệ thống Core Banking ngân hàng." },
+            { id: 2, document: "QuyTrinh_CIF.md", section: "3.2", title: "Các bước mở CIF", text: "Các bước mở CIF bao gồm: Bước 1 - Thu thập giấy tờ; Bước 2 - Kiểm tra thông tin KYC; Bước 3 - Nhập thông tin vào hệ thống; Bước 4 - Phê duyệt cấp quản lý; Bước 5 - Bàn giao mã CIF cho khách hàng." },
+            { id: 3, document: "QuyTrinh_CIF.md", section: "3.3", title: "Thời gian xử lý CIF", text: "Thời gian xử lý phê duyệt hồ sơ mở CIF thông thường là từ 15 đến 30 phút kể từ khi tiếp nhận đủ chứng từ hợp lệ." },
+            { id: 4, document: "QuyDinh_KYC.md", section: "2.0", title: "Khách hàng eKYC", text: "Quy định eKYC áp dụng cho khách hàng cá nhân mở tài khoản trực tuyến qua ứng dụng Mobile Banking." },
+            { id: 5, document: "QuyDinh_KYC.md", section: "2.1", title: "Giấy tờ xác minh", text: "Giấy tờ xác minh hợp lệ gồm CCCD gắn chip còn hạn sử dụng hoặc Hộ chiếu Việt Nam." },
+            { id: 6, document: "QuyTrinh_The.md", section: "4.1", title: "Thời gian phát hành thẻ", text: "Thời gian phát hành thẻ ghi nợ nội địa tối đa là 3 ngày làm việc kể từ khi duyệt hồ sơ thành công." },
+            { id: 7, document: "QuyTrinh_The.md", section: "4.2", title: "Hạn mức giao dịch", text: "Hạn mức giao dịch thẻ ghi nợ hạng chuẩn mặc định là 50,000,000 VNĐ/ngày." },
+            { id: 8, document: "QuyDinh_MoTaiKhoan.md", section: "1.2", title: "Điều kiện mở tài khoản", text: "Cá nhân từ đủ 15 tuổi trở lên có năng lực hành vi dân sự đầy đủ được phép mở tài khoản thanh toán." },
+            { id: 9, document: "QuyTrinh_TietKiem.md", section: "2.3", title: "Tất toán trước hạn", text: "Khách hàng rút tiền gửi tiết kiệm trước hạn sẽ hưởng lãi suất không kỳ hạn áp dụng tại thời điểm rút." },
+            { id: 10, document: "QuyDinh_AnToanBaoMat.md", section: "5.1", title: "Xác thực OTP", text: "Mọi giao dịch chuyển tiền trên 10,000,000 VNĐ bắt buộc xác thực qua Smart OTP hoặc Sinh trắc học." }
+        ];
+
+        const MOCK_ACCOUNTS = [
+            { account: "1234567890", name: "NGUYEN VAN A", type: "CA (Tài khoản thanh toán)" },
+            { account: "1234567001", name: "TRAN THI B", type: "SA (Tài khoản tiết kiệm)" },
+            { account: "9876543210", name: "CONG TY TNHH ABC", type: "CA (Tài khoản doanh nghiệp)" },
+            { account: "1234999888", name: "LE VAN C", type: "CA (Tài khoản thanh toán)" }
+        ];
+
+        // Session memory in browser memory
+        let localSessionMemory = {};
+        let currentSessionId = "session_demo_01";
+        let executionMode = "mock"; // 'mock' or 'api'
+        let currentTab = "docs";
+
+        window.addEventListener('DOMContentLoaded', () => {
+            renderDocsList();
+            renderMemoryList();
+            document.getElementById('session-id-input').value = currentSessionId;
+        });
+
+        function switchTab(tab) {
+            currentTab = tab;
+            const docsBtn = document.getElementById('tab-docs-btn');
+            const memoryBtn = document.getElementById('tab-memory-btn');
+            const docsContent = document.getElementById('tab-docs-content');
+            const memoryContent = document.getElementById('tab-memory-content');
+
+            if (tab === 'docs') {
+                docsBtn.className = "flex-1 py-2.5 text-center text-bank-600 border-b-2 border-bank-600 font-semibold";
+                memoryBtn.className = "flex-1 py-2.5 text-center text-slate-500 hover:text-slate-700";
+                docsContent.classList.remove('hidden');
+                memoryContent.classList.add('hidden');
+            } else {
+                memoryBtn.className = "flex-1 py-2.5 text-center text-bank-600 border-b-2 border-bank-600 font-semibold";
+                docsBtn.className = "flex-1 py-2.5 text-center text-slate-500 hover:text-slate-700";
+                memoryContent.classList.remove('hidden');
+                docsContent.classList.add('hidden');
+            }
+        }
+
+        function createNewSession() {
+            currentSessionId = "session_" + Math.random().toString(36).substring(2, 8);
+            document.getElementById('session-id-input').value = currentSessionId;
+            localSessionMemory[currentSessionId] = [];
+            renderMemoryList();
+            
+            // Clear message area with fresh banner
+            const chatBox = document.getElementById('chat-messages');
+            chatBox.innerHTML = `
+                <div class="max-w-3xl mx-auto bg-white rounded-2xl p-5 border border-slate-200/80 shadow-sm text-center">
+                    <div class="w-12 h-12 bg-bank-50 text-bank-600 rounded-full flex items-center justify-center mx-auto mb-3 text-xl">
+                        <i class="fa-solid fa-robot"></i>
+                    </div>
+                    <h2 class="text-base font-bold text-slate-800 mb-1">Phiên Mới Đã Được Khởi Tạo (${currentSessionId})</h2>
+                    <p class="text-xs text-slate-500">Lịch sử hội thoại cũ đã được làm sạch. Bạn có thể thử nghiệm lại các kịch bản.</p>
+                </div>
+            `;
+        }
+
+        function toggleMode() {
+            const modeSelect = document.getElementById('execution-mode');
+            executionMode = modeSelect.value;
+            const statusInd = document.getElementById('status-indicator');
+            const statusTxt = document.getElementById('status-text');
+            const endpointDisp = document.getElementById('api-endpoint-display');
+
+            if (executionMode === 'api') {
+                statusInd.className = "w-2.5 h-2.5 rounded-full bg-amber-400 animate-pulse";
+                statusTxt.textContent = "Connecting FastAPI...";
+                endpointDisp.textContent = "http://localhost:8000/chat";
+                testBackendConnection();
+            } else {
+                statusInd.className = "w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse";
+                statusTxt.textContent = "Local Engine Ready";
+                endpointDisp.textContent = "Mock Simulator";
+            }
+        }
+
+        async function testBackendConnection() {
+            const statusInd = document.getElementById('status-indicator');
+            const statusTxt = document.getElementById('status-text');
+            try {
+                const response = await fetch("http://localhost:8000/docs", { method: 'GET', mode: 'no-cors' });
+                statusInd.className = "w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse";
+                statusTxt.textContent = "FastAPI Backend Online";
+            } catch (err) {
+                statusInd.className = "w-2.5 h-2.5 rounded-full bg-rose-500";
+                statusTxt.textContent = "FastAPI Offline (Fallback Mock)";
+            }
+        }
+
+        function renderDocsList() {
+            const container = document.getElementById('docs-list');
+            container.innerHTML = MOCK_DOCUMENTS.map(doc => `
+                <div class="p-2 bg-slate-50 rounded-lg border border-slate-200/80 hover:bg-white transition-all">
+                    <div class="flex items-center justify-between text-[11px]">
+                        <span class="font-semibold text-bank-700">${doc.document}</span>
+                        <span class="bg-slate-200 text-slate-700 px-1.5 py-0.2 rounded text-[10px]">Mục ${doc.section}</span>
+                    </div>
+                    <div class="text-[11px] font-medium text-slate-800 mt-0.5">${doc.title}</div>
+                    <p class="text-[10px] text-slate-500 mt-1 line-clamp-2">${doc.text}</p>
+                </div>
+            `).join('');
+        }
+
+        function renderMemoryList() {
+            const container = document.getElementById('memory-list');
+            const history = localSessionMemory[currentSessionId] || [];
+            
+            if (history.length === 0) {
+                container.innerHTML = `<div class="text-slate-400 text-center py-6 italic text-xs">Chưa có dữ liệu hội thoại.</div>`;
+                return;
+            }
+
+            container.innerHTML = history.map((item, idx) => `
+                <div class="p-2 rounded-lg text-xs ${item.role === 'user' ? 'bg-blue-50 border border-blue-200 text-blue-900' : 'bg-slate-100 border border-slate-200 text-slate-800'}">
+                    <div class="font-bold text-[10px] uppercase text-slate-500 mb-0.5">${item.role === 'user' ? 'User Question' : 'Assistant Memory'}</div>
+                    <p class="line-clamp-2">${item.content}</p>
+                </div>
+            `).join('');
+        }
+
+        function runScenario(num) {
+            const input = document.getElementById('user-input');
+            if (num === 0) {
+                input.value = "Xin chào, bạn giúp gì được cho tôi?";
+            } else if (num === 1) {
+                input.value = "Quy trình mở CIF gồm những bước nào?";
+            } else if (num === 2) {
+                input.value = "1234567";
+            } else if (num === 3) {
+                input.value = "Sau bước đó thì cần thời gian xử lý bao lâu?";
+            } else if (num === 4) {
+                input.value = "Đối tượng nào được áp dụng quy định eKYC?";
+            }
+            handleSend(new Event('submit'));
+        }
+
+        function simulateSmartSearchBackend(question, sessionId) {
+            if (!localSessionMemory[sessionId]) {
+                localSessionMemory[sessionId] = [];
+            }
+            const history = localSessionMemory[sessionId];
+            const qLower = question.toLowerCase().trim();
+
+            // Branch 0: Chitchat / Greeting Detection
+            const greetingKeywords = ['chào', 'hi', 'hello', 'bạn là ai', 'giúp gì', 'tro ly', 'trợ lý'];
+            const isGreeting = greetingKeywords.some(k => qLower.includes(k)) && qLower.length < 35;
+
+            if (isGreeting) {
+                const answerText = "Xin chào! Tôi là Trợ lý Smart Search Nội bộ. Tôi có thể hỗ trợ bạn:\n\n1. Tra cứu Quy trình & Quy chế nội bộ (CIF, eKYC, Hạn mức thẻ, Tiết kiệm...)\n2. Tra cứu Số tài khoản tác nghiệp gần đúng.\n\nBạn cần hỗ trợ câu hỏi hay thông tin tác nghiệp nào ạ?";
+                
+                history.push({ role: 'user', content: question });
+                history.push({ role: 'assistant', content: answerText });
+
+                return {
+                    type: "chitchat",
+                    answer: answerText,
+                    sources: [],
+                    confidence: {
+                        score: 1.0,
+                        level: "High"
+                    }
+                };
+            }
+
+            // Step 1: Intent Classification (Rule-based)
+            const digits = question.replace(/\D/g, '');
+            const isOperation = (digits.length >= 5) || (qLower.includes("stk") && digits.length > 0);
+
+            let result = null;
+
+            if (isOperation) {
+                // Branch 1: Operational Search
+                const matches = [];
+                MOCK_ACCOUNTS.forEach(acc => {
+                    if (acc.account.startsWith(digits)) {
+                        matches.push({
+                            account: acc.account,
+                            name: acc.name,
+                            type: acc.type,
+                            score: 0.96,
+                            reason: `Khớp tiền tố STK ${digits}`
+                        });
+                    } else if (acc.account.includes(digits)) {
+                        matches.push({
+                            account: acc.account,
+                            name: acc.name,
+                            type: acc.type,
+                            score: 0.85,
+                            reason: `Chứa chuỗi ký tự ${digits}`
+                        });
+                    }
+                });
+
+                history.push({ role: 'user', content: question });
+                history.push({ role: 'assistant', content: `Đã tra cứu tác nghiệp cho ${digits}. Tìm thấy ${matches.length} kết quả.` });
+
+                result = {
+                    type: "operation",
+                    results: matches,
+                    confidence: {
+                        score: matches.length > 0 ? matches[0].score : 0.0,
+                        level: matches.length > 0 ? (matches[0].score > 0.9 ? "High" : "Medium") : "Low"
+                    }
+                };
+            } else {
+                // Branch 2: Knowledge QA (RAG with Qdrant Simulator)
+                let matchedDoc = null;
+                let confidenceScore = 0.0;
+                let answerText = "";
+
+                if (qLower.includes("ekyc") || qLower.includes("trực tuyến")) {
+                    matchedDoc = MOCK_DOCUMENTS[3];
+                    answerText = "Theo quy định, eKYC áp dụng cho đối tượng khách hàng cá nhân mở tài khoản trực tuyến qua ứng dụng Mobile Banking.";
+                    confidenceScore = 0.95;
+                } else if (qLower.includes("thời gian") || qLower.includes("sau bước") || qLower.includes("mất bao lâu")) {
+                    matchedDoc = MOCK_DOCUMENTS[2];
+                    answerText = "Dựa trên tài liệu QuyTrinh_CIF.md (Mục 3.3): Thời gian xử lý phê duyệt hồ sơ mở CIF sau các bước kiểm tra là từ 15 đến 30 phút kể từ khi tiếp nhận đủ chứng từ hợp lệ.";
+                    confidenceScore = 0.89;
+                } else if (qLower.includes("thẻ") || qLower.includes("phát hành")) {
+                    matchedDoc = MOCK_DOCUMENTS[5];
+                    answerText = "Dựa trên QuyTrinh_The.md (Mục 4.1): Thời gian phát hành thẻ ghi nợ nội địa tối đa là 3 ngày làm việc kể từ khi duyệt hồ sơ.";
+                    confidenceScore = 0.91;
+                } else if (qLower.includes("cif") || qLower.includes("mở cif") || qLower.includes("quy trình")) {
+                    matchedDoc = MOCK_DOCUMENTS[1];
+                    answerText = "Quy trình mở CIF gồm 5 bước chính: (1) Thu thập giấy tờ, (2) Kiểm tra thông tin KYC, (3) Nhập thông tin vào hệ thống Core Banking, (4) Phê duyệt của cấp quản lý, và (5) Bàn giao mã CIF cho khách hàng.";
+                    confidenceScore = 0.94;
+                } else {
+                    // Fallback when query is not found in internal knowledge base
+                    answerText = "Rất tiếc, tôi chưa tìm thấy quy trình hoặc văn bản quy định phù hợp với câu hỏi của bạn trong kho 10 tài liệu hiện tại. Bạn vui lòng thử lại với từ khóa như: CIF, eKYC, thẻ, hoặc nhập số tài khoản.";
+                    confidenceScore = 0.30;
+                }
+
+                history.push({ role: 'user', content: question });
+                history.push({ role: 'assistant', content: answerText });
+
+                result = {
+                    type: "knowledge",
+                    answer: answerText,
+                    sources: matchedDoc ? [
+                        {
+                            document: matchedDoc.document,
+                            section: matchedDoc.section,
+                            content_snippet: matchedDoc.text
+                        }
+                    ] : [],
+                    confidence: {
+                        score: confidenceScore,
+                        level: confidenceScore >= 0.85 ? "High" : (confidenceScore >= 0.60 ? "Medium" : "Low")
+                    }
+                };
+            }
+
+            return result;
+        }
+
+        async function callFastAPI(question) {
+            try {
+                const response = await fetch("http://localhost:8000/chat", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                        conversation_id: currentSessionId,
+                        question: question
+                    })
+                });
+                if (response.ok) {
+                    return await response.json();
+                }
+            } catch (e) {
+                console.warn("FastAPI unreachable, falling back to simulator:", e);
+            }
+            return null;
+        }
+
+        function appendUserMessage(text) {
+            const chatBox = document.getElementById('chat-messages');
+            const msgHtml = `
+                <div class="flex justify-end max-w-3xl mx-auto">
+                    <div class="bg-bank-600 text-white rounded-2xl rounded-tr-sm px-4 py-3 max-w-[85%] sm:max-w-[75%] shadow-md text-sm">
+                        <p class="whitespace-pre-wrap">${escapeHtml(text)}</p>
+                    </div>
+                </div>
+            `;
+            chatBox.insertAdjacentHTML('beforeend', msgHtml);
+            scrollToBottom();
+        }
+
+        function appendTypingIndicator() {
+            const chatBox = document.getElementById('chat-messages');
+            const id = "typing-" + Date.now();
+            const html = `
+                <div id="${id}" class="flex gap-3 max-w-3xl mx-auto items-start">
+                    <div class="w-8 h-8 rounded-xl bg-bank-100 text-bank-700 flex items-center justify-center shrink-0 font-bold text-xs shadow-sm">
+                        <i class="fa-solid fa-robot"></i>
+                    </div>
+                    <div class="bg-white rounded-2xl rounded-tl-sm p-4 border border-slate-200 shadow-sm flex items-center gap-2">
+                        <span class="text-xs text-slate-500 font-medium">Đang xử lý (Vector Search & Intent Routing)...</span>
+                        <div class="flex gap-1">
+                            <span class="w-2 h-2 bg-bank-500 rounded-full animate-bounce"></span>
+                            <span class="w-2 h-2 bg-bank-500 rounded-full animate-bounce [animation-delay:0.2s]"></span>
+                            <span class="w-2 h-2 bg-bank-500 rounded-full animate-bounce [animation-delay:0.4s]"></span>
+                        </div>
+                    </div>
+                </div>
+            `;
+            chatBox.insertAdjacentHTML('beforeend', html);
+            scrollToBottom();
+            return id;
+        }
+
+        function removeTypingIndicator(id) {
+            const el = document.getElementById(id);
+            if (el) el.remove();
+        }
+
+        function appendAssistantMessage(res) {
+            const chatBox = document.getElementById('chat-messages');
+            const isKnowledge = res.type === 'knowledge';
+            const isChitchat = res.type === 'chitchat';
+            
+            // Badge styles for confidence level
+            let levelColor = "bg-emerald-100 text-emerald-800 border-emerald-300";
+            if (res.confidence.level === "Medium") levelColor = "bg-amber-100 text-amber-800 border-amber-300";
+            if (res.confidence.level === "Low") levelColor = "bg-rose-100 text-rose-800 border-rose-300";
+
+            let contentBody = "";
+
+            if (isChitchat) {
+                contentBody = `
+                    <div class="text-slate-800 text-sm leading-relaxed whitespace-pre-line font-medium">
+                        ${escapeHtml(res.answer)}
+                    </div>
+                `;
+            } else if (isKnowledge) {
+                // Knowledge RAG layout
+                const source = res.sources && res.sources.length > 0 ? res.sources[0] : null;
+                contentBody = `
+                    <div class="text-slate-800 text-sm leading-relaxed mb-3">
+                        ${escapeHtml(res.answer)}
+                    </div>
+
+                    ${source ? `
+                    <div class="mt-3 pt-3 border-t border-slate-100">
+                        <div class="text-[11px] font-semibold uppercase text-slate-400 mb-1.5 flex items-center gap-1">
+                            <i class="fa-solid fa-bookmark text-bank-500"></i> Trích dẫn Nguồn Nạp từ Qdrant:
+                        </div>
+                        <div class="bg-slate-50 border border-slate-200 rounded-xl p-2.5 text-xs">
+                            <div class="flex items-center justify-between mb-1">
+                                <span class="font-bold text-bank-700 flex items-center gap-1">
+                                    <i class="fa-regular fa-file-lines"></i> ${escapeHtml(source.document)}
+                                </span>
+                                <span class="bg-bank-100 text-bank-800 text-[10px] font-semibold px-2 py-0.5 rounded">
+                                    Mục ${escapeHtml(source.section || 'N/A')}
+                                </span>
+                            </div>
+                            <p class="text-slate-600 text-[11px] italic bg-white p-2 rounded border border-slate-100">
+                                "${escapeHtml(source.content_snippet)}"
+                            </p>
+                        </div>
+                    </div>
+                    ` : ''}
+                `;
+            } else {
+                // Operational search layout
+                const results = res.results || [];
+                contentBody = `
+                    <div class="text-slate-800 text-sm leading-relaxed mb-2 font-medium">
+                        <i class="fa-solid fa-magnifying-glass-dollar text-emerald-600 mr-1"></i>
+                        Kết quả tra cứu thông tin tài khoản tác nghiệp:
+                    </div>
+
+                    ${results.length > 0 ? `
+                        <div class="space-y-2 mt-2">
+                            ${results.map(item => `
+                                <div class="bg-emerald-50/60 border border-emerald-200 rounded-xl p-3 text-xs">
+                                    <div class="flex items-center justify-between font-bold text-emerald-900">
+                                        <span class="font-mono text-sm">${escapeHtml(item.account)}</span>
+                                        <span class="bg-emerald-200 text-emerald-800 px-2 py-0.5 rounded text-[10px]">
+                                            ${escapeHtml(item.type)}
+                                        </span>
+                                    </div>
+                                    <div class="text-slate-700 font-semibold mt-1">Chủ tài khoản: ${escapeHtml(item.name)}</div>
+                                    <div class="text-slate-500 text-[11px] mt-1 flex items-center gap-1">
+                                        <i class="fa-solid fa-circle-check text-emerald-500"></i> Lý do khớp: ${escapeHtml(item.reason)}
+                                    </div>
+                                </div>
+                            `).join('')}
+                        </div>
+                    ` : `
+                        <div class="bg-amber-50 border border-amber-200 rounded-xl p-3 text-xs text-amber-800">
+                            Không tìm thấy tài khoản tương thích với chuỗi truy vấn.
+                        </div>
+                    `}
+                `;
+            }
+
+            const jsonDrawerId = "json-" + Date.now();
+
+            const html = `
+                <div class="flex gap-3 max-w-3xl mx-auto items-start">
+                    <div class="w-8 h-8 rounded-xl bg-bank-600 text-white flex items-center justify-center shrink-0 font-bold text-xs shadow-sm">
+                        <i class="fa-solid fa-robot"></i>
+                    </div>
+                    <div class="bg-white rounded-2xl rounded-tl-sm p-4 sm:p-5 border border-slate-200 shadow-sm flex-1">
+                        <!-- Top Metadata Bar -->
+                        <div class="flex flex-wrap items-center justify-between gap-2 pb-3 mb-3 border-b border-slate-100 text-xs">
+                            <div class="flex items-center gap-2">
+                                <span class="px-2.5 py-0.5 rounded-full font-semibold text-[11px] ${isChitchat ? 'bg-purple-100 text-purple-800' : (isKnowledge ? 'bg-blue-100 text-blue-800' : 'bg-emerald-100 text-emerald-800')}">
+                                    ${isChitchat ? '<i class="fa-solid fa-comments mr-1"></i> Chitchat' : (isKnowledge ? '<i class="fa-solid fa-book mr-1"></i> Knowledge QA' : '<i class="fa-solid fa-bolt mr-1"></i> Operational Search')}
+                                </span>
+                            </div>
+
+                            <div class="flex items-center gap-2">
+                                <span class="text-slate-400 text-[11px]">Độ tin cậy:</span>
+                                <span class="px-2 py-0.5 rounded border font-semibold text-[11px] ${levelColor}">
+                                    ${res.confidence.level} (${(res.confidence.score * 100).toFixed(0)}%)
+                                </span>
+                            </div>
+                        </div>
+
+                        <!-- Response Main Body -->
+                        ${contentBody}
+
+                        <!-- Toggle Raw JSON Button -->
+                        <div class="mt-3 pt-2 border-t border-slate-100 flex justify-end">
+                            <button onclick="toggleJson('${jsonDrawerId}')" class="text-[11px] text-slate-400 hover:text-slate-600 flex items-center gap-1 font-mono">
+                                <i class="fa-solid fa-code"></i> Xem Response JSON
+                            </button>
+                        </div>
+
+                        <div id="${jsonDrawerId}" class="hidden mt-2 p-3 bg-slate-900 text-slate-200 rounded-xl text-[11px] font-mono overflow-x-auto">
+                            <pre>${escapeHtml(JSON.stringify(res, null, 2))}</pre>
+                        </div>
+                    </div>
+                </div>
+            `;
+
+            chatBox.insertAdjacentHTML('beforeend', html);
+            scrollToBottom();
+        }
+
+        function toggleJson(id) {
+            const drawer = document.getElementById(id);
+            if (drawer) {
+                drawer.classList.toggle('hidden');
+            }
+        }
+
+        function scrollToBottom() {
+            const chatBox = document.getElementById('chat-messages');
+            chatBox.scrollTop = chatBox.scrollHeight;
+        }
+
+        function escapeHtml(str) {
+            if (!str) return '';
+            return str
+                .replace(/&/g, "&amp;")
+                .replace(/</g, "&lt;")
+                .replace(/>/g, "&gt;")
+                .replace(/"/g, "&quot;")
+                .replace(/'/g, "&#039;");
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,8 @@
+[
+  {"account": "1234567890", "name": "NGUYEN VAN A", "type": "CA (Thanh toán)"},
+  {"account": "1234567001", "name": "TRAN THI B", "type": "SA (Tiết kiệm)"},
+  {"account": "9876543210", "name": "CONG TY TNHH ABC", "type": "CA (Doanh nghiệp)"},
+  {"account": "1234999888", "name": "LE VAN C", "type": "CA (Thanh toán)"},
+  {"account": "5678901234", "name": "PHAM THI D", "type": "CA (Thanh toán)"},
+  {"account": "1234500100", "name": "HOANG VAN E", "type": "SA (Tiết kiệm)"}
+]
