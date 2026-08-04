@@ -111,6 +111,19 @@ Kết quả: `healthz` trả OK.
 
 ## Bước 3: Ingest tài liệu vào Qdrant
 
+### 3.1 Tạo collection `internal_docs` (bắt buộc)
+
+> Backend hiện tại **không tự tạo collection** khi startup, nên cần tạo trước khi chat hoặc upload tài liệu.
+
+```cmd
+cd /d D:\Qdrant\demo_chatbot
+> collection_internal_docs.json echo {"vectors":{"dense":{"size":1024,"distance":"Cosine"}},"sparse_vectors":{"keywords":{}},"shard_number":1,"replication_factor":1}
+curl.exe -X PUT "http://localhost:6333/collections/internal_docs" -H "Content-Type: application/json" -d @collection_internal_docs.json
+curl.exe "http://localhost:6333/collections/internal_docs"
+```
+
+### 3.2 Ingest tài liệu vào Qdrant
+
 Script đọc tất cả file `.md` trong `data/documents/`, chunk theo Markdown headers, sinh embeddings (BGE-M3 + BM25), rồi upsert vào Qdrant.
 
 ```cmd
