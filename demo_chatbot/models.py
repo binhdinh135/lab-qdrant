@@ -34,14 +34,10 @@ class ConfidenceInfo(BaseModel):
 class UnifiedResponse(BaseModel):
     """
     Response thống nhất cho mọi loại câu hỏi.
-    - type: "knowledge" | "operation" | "chitchat"
-    - answer: câu trả lời (knowledge/chitchat)
-    - sources: danh sách trích dẫn (knowledge)
-    - results: kết quả tra cứu (operation)
-    - confidence: điểm tin cậy
     """
     type: str
     answer: Optional[str] = None
     sources: Optional[List[SourceItem]] = None
     results: Optional[List[Dict[str, Any]]] = None
     confidence: ConfidenceInfo
+    pipeline: Optional[Dict[str, Any]] = None

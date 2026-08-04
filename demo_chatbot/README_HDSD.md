@@ -2,6 +2,40 @@
 
 ---
 
+## Quick Start (Máy mới kéo code về chạy ngay)
+
+> Chỉ cần: Python 3.10+, Docker Desktop, Ollama đã cài sẵn.
+
+```cmd
+:: 1. Clone repo
+git clone https://github.com/binhdinh135/lab-qdrant.git
+cd lab-qdrant
+
+:: 2. Tạo venv + cài dependencies (1 lần)
+python -m venv .venv
+.venv\Scripts\pip.exe install -r demo_chatbot\requirements.txt
+.venv\Scripts\pip.exe install langchain-ollama sentence-transformers
+
+:: 3. Pull model LLM (1 lần)
+ollama pull qwen2.5:7b
+
+:: 4. Start Qdrant
+cd demo-local
+docker compose up -d
+cd ..
+
+:: 5. Start backend
+cd demo_chatbot
+..\.venv\Scripts\python.exe -m uvicorn app:app --reload --port 8000
+
+:: 6. Mở browser → http://127.0.0.1:8000
+:: 7. Upload file .md → Chat hỏi đáp!
+```
+
+> **Không cần chỉnh path** — code dùng relative path. Clone về đâu cũng chạy.
+
+---
+
 ## Bước 1: Cài đặt môi trường
 
 ### 1.1 Yêu cầu hệ thống
@@ -31,19 +65,23 @@ Kết quả phải thấy model `qwen2.5:7b` trong danh sách.
 
 > **Lưu ý:** Ollama tự chạy background sau khi cài. Không cần start thủ công.
 
-### 1.3 Tạo virtual environment (nếu chưa có)
+### 1.3 Tạo virtual environment
 
 ```cmd
-cd /d D:\Qdrant
+cd lab-qdrant
 python -m venv .venv
 ```
+
+> Venv tạo ngay trong folder repo. Packages cài vào `.venv\Lib\` (~4-5GB).
 
 ### 1.4 Cài đặt toàn bộ dependencies
 
 ```cmd
-D:\Qdrant\.venv\Scripts\pip.exe install -r demo_chatbot\requirements.txt
-D:\Qdrant\.venv\Scripts\pip.exe install langchain-ollama sentence-transformers
+.venv\Scripts\pip.exe install -r demo_chatbot\requirements.txt
+.venv\Scripts\pip.exe install langchain-ollama sentence-transformers
 ```
+
+> Tổng dung lượng packages ~4-5GB (torch + models). Tất cả nằm trong `D:\Qdrant\.venv\Lib\`.
 
 ---
 

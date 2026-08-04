@@ -98,20 +98,32 @@ def retrieve_and_answer(
     
     Returns: (answer, sources, confidence)
     """
+    import time
+
     client = _get_client()
     dense_model = _get_dense_model()
     sparse_model = _get_sparse_model()
     llm = _get_llm()
 
+    pipeline_details = {}
+
     # 1. Embed query
+    t0 = time.time()
     query_dense = dense_model.encode([question], normalize_embeddings=True)[0].tolist()
     query_sparse_raw = list(sparse_model.embed([question]))[0]
     query_sparse = SparseVector(
         indices=query_sparse_raw.indices.tolist(),
         values=query_sparse_raw.values.tolist(),
     )
+    pipeline_details["embedding"] = {
+        "time_ms": round((time.time() - t0) * 1000),
+        "dense_dims": len(query_dense),
+        "sparse_terms": len(query_sparse_raw.indices.tolist()),
+        "model": "BAAI/bge-m3",
+    }
 
     # 2. Hybrid Search (dense + sparse + RRF)
+    t1 = time.time()
     results = client.query_points(
         collection_name=COLLECTION_NAME,
         prefetch=[
@@ -122,6 +134,12 @@ def retrieve_and_answer(
         limit=top_k,
         with_payload=True,
     )
+    pipeline_details["search"] = {
+        "time_ms": round((time.time() - t1) * 1000),
+        "method": "Hybrid (Dense + Sparse + RRF)",
+        "results_count": len(results.points),
+        "scores": [round(p.score, 4) for p in results.points],
+    }
 
     # 3. Build context + sources
     context_parts = []
@@ -144,12 +162,20 @@ def retrieve_and_answer(
     context_str = "\n".join(context_parts) if context_parts else "Không tìm thấy tài liệu liên quan."
 
     # 4. Build prompt + call LLM
+    t2 = time.time()
     messages = RAG_PROMPT.format_messages(
         context=context_str,
         history=history,
         question=question,
     )
     llm_output = llm.invoke(messages).content
+    pipeline_details["llm"] = {
+        "time_ms": round((time.time() - t2) * 1000),
+        "model": "qwen2.5:7b",
+        "provider": "ollama",
+        "prompt_messages": len(messages),
+        "output_length": len(llm_output),
+    }
 
     # 5. Confidence
     confidence_score = round(top_score, 2) if top_score > 0 else 0.0
@@ -163,4 +189,4 @@ def retrieve_and_answer(
 
     confidence = ConfidenceInfo(score=confidence_score, level=level)
 
-    return llm_output, sources, confidence
+    return llm_output, sources, confidence, pipeline_details

@@ -121,7 +121,7 @@ def chat(req: ChatRequest):
         )
 
     # ─── KNOWLEDGE (RAG) ───
-    answer, sources, confidence = retrieve_and_answer(question, history)
+    answer, sources, confidence, pipeline_details = retrieve_and_answer(question, history)
 
     add_user_message(conversation_id, question)
     add_ai_message(conversation_id, answer)
@@ -131,6 +131,7 @@ def chat(req: ChatRequest):
         answer=answer,
         sources=sources,
         confidence=confidence,
+        pipeline=pipeline_details,
     )
 
 
