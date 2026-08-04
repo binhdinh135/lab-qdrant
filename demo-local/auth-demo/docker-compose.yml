@@ -1,0 +1,33 @@
+# =============================================================================
+# DOCKER COMPOSE - QDRANT VỚI PHÂN QUYỀN (API KEY + JWT)
+# =============================================================================
+# Port 6380 (REST) và 6381 (gRPC) - tránh conflict với demo chính (6333/6334)
+#
+# Cấu hình phân quyền:
+#   - Admin API Key:     admin-secret-key-2024   (full quyền)
+#   - Read-only API Key: readonly-key-2024       (chỉ đọc)
+#   - JWT RBAC:          enabled                 (cho kịch bản 2 & 3)
+# =============================================================================
+
+services:
+  qdrant-auth:
+    image: qdrant/qdrant:v1.12.0
+    container_name: qdrant-auth-demo
+    ports:
+      - "6380:6333"   # REST API
+      - "6381:6334"   # gRPC
+    volumes:
+      - ./qdrant_storage:/qdrant/storage
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 2G
+          cpus: "2.0"
+    environment:
+      - QDRANT__SERVICE__GRPC_PORT=6334
+      # --- Phân quyền API Key ---
+      - QDRANT__SERVICE__API_KEY=admin-secret-key-2024
+      - QDRANT__SERVICE__READ_ONLY_API_KEY=readonly-key-2024
+      # --- JWT RBAC (bật cho kịch bản 2 & 3) ---
+      - QDRANT__SERVICE__JWT_RBAC=true

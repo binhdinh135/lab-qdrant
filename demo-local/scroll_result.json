@@ -1,0 +1,153 @@
+﻿{
+    "result":  {
+                   "points":  [
+                                  {
+                                      "id":  1,
+                                      "payload":  {
+                                                      "document_id":  "DOC-001",
+                                                      "title":  "Quy ÃâÃ¡Â»â¹nh nghÃ¡Â»â° phÃÂ©p",
+                                                      "domain":  "nhan_su",
+                                                      "department":  "BAN_LE",
+                                                      "doc_type":  "quy_dinh",
+                                                      "doc_status":  "ACTIVE",
+                                                      "text":  "NhÃÂ¢n viÃÂªn ÃâÃÂ°Ã¡Â»Â£c nghÃ¡Â»â° phÃÂ©p 12 ngÃÂ y mÃ¡Â»âi nÃÆm vÃÂ  cÃÂ³ thÃ¡Â»Æ chuyÃ¡Â»Æn ÃâÃ¡Â»â¢i sang nghÃ¡Â»â° bÃÂ¹ khi cÃ¡ÂºÂ§n."
+                                                  }
+                                  },
+                                  {
+                                      "id":  2,
+                                      "payload":  {
+                                                      "document_id":  "DOC-002",
+                                                      "title":  "LÃÂ m thÃÂªm giÃ¡Â»Â",
+                                                      "domain":  "nhan_su",
+                                                      "department":  "BAN_LE",
+                                                      "doc_type":  "quy_dinh",
+                                                      "doc_status":  "ACTIVE",
+                                                      "text":  "LÃÂ m thÃÂªm giÃ¡Â»Â phÃ¡ÂºÂ£i ÃâÃÂ°Ã¡Â»Â£c trÃÂ°Ã¡Â»Å¸ng bÃ¡Â»â¢ phÃ¡ÂºÂ­n phÃÂª duyÃ¡Â»â¡t trÃÂ°Ã¡Â»âºc khi thÃ¡Â»Â±c hiÃ¡Â»â¡n."
+                                                  }
+                                  },
+                                  {
+                                      "id":  3,
+                                      "payload":  {
+                                                      "document_id":  "DOC-003",
+                                                      "title":  "HÃÂ°Ã¡Â»âºng dÃ¡ÂºÂ«n onboarding",
+                                                      "domain":  "nhan_su",
+                                                      "department":  "BAN_LE",
+                                                      "doc_type":  "huong_dan",
+                                                      "doc_status":  "ACTIVE",
+                                                      "text":  "NhÃÂ¢n viÃÂªn mÃ¡Â»âºi cÃ¡ÂºÂ§n hoÃÂ n tÃ¡ÂºÂ¥t cÃÂ¡c thÃ¡Â»Â§ tÃ¡Â»Â¥c ÃâÃÆng kÃÂ½ tÃÂ i khoÃ¡ÂºÂ£n vÃÂ  cam kÃ¡ÂºÂ¿t bÃ¡ÂºÂ£o mÃ¡ÂºÂ­t thÃÂ´ng tin."
+                                                  }
+                                  },
+                                  {
+                                      "id":  4,
+                                      "payload":  {
+                                                      "document_id":  "DOC-004",
+                                                      "title":  "ChÃÂ­nh sÃÂ¡ch bÃ¡ÂºÂ£o mÃ¡ÂºÂ­t",
+                                                      "domain":  "hanh_chinh",
+                                                      "department":  "PHONG_HC",
+                                                      "doc_type":  "chinh_sach",
+                                                      "doc_status":  "ACTIVE",
+                                                      "text":  "TÃÂ i liÃ¡Â»â¡u nÃ¡Â»â¢i bÃ¡Â»â¢ chÃ¡Â»â° ÃâÃÂ°Ã¡Â»Â£c chia sÃ¡ÂºÂ» trong phÃ¡ÂºÂ¡m vi cÃÂ´ng viÃ¡Â»â¡c vÃÂ  phÃ¡ÂºÂ£i ÃâÃÂ°Ã¡Â»Â£c bÃ¡ÂºÂ£o vÃ¡Â»â¡ bÃ¡ÂºÂ±ng mÃ¡ÂºÂ­t khÃ¡ÂºÂ©u."
+                                                  }
+                                  },
+                                  {
+                                      "id":  5,
+                                      "payload":  {
+                                                      "document_id":  "DOC-005",
+                                                      "title":  "Quy trÃÂ¬nh ÃâÃ¡ÂºÂ·t phÃÂ²ng hÃ¡Â»Âp",
+                                                      "domain":  "hanh_chinh",
+                                                      "department":  "PHONG_HC",
+                                                      "doc_type":  "quy_trinh",
+                                                      "doc_status":  "ACTIVE",
+                                                      "text":  "ÃÂÃ¡ÂºÂ·t phÃÂ²ng hÃ¡Â»Âp cÃ¡ÂºÂ§n gÃ¡Â»Â­i yÃÂªu cÃ¡ÂºÂ§u trÃÂ°Ã¡Â»âºc 24 giÃ¡Â»Â vÃÂ  xÃÂ¡c nhÃ¡ÂºÂ­n lÃ¡ÂºÂ¡i lÃ¡Â»â¹ch trÃÂ¬nh."
+                                                  }
+                                  },
+                                  {
+                                      "id":  6,
+                                      "payload":  {
+                                                      "document_id":  "DOC-006",
+                                                      "title":  "CÃ¡ÂºÂ¥u hÃÂ¬nh email doanh nghiÃ¡Â»â¡p",
+                                                      "domain":  "cong_nghe",
+                                                      "department":  "IT",
+                                                      "doc_type":  "huong_dan",
+                                                      "doc_status":  "ACTIVE",
+                                                      "text":  "TÃÂ i khoÃ¡ÂºÂ£n email doanh nghiÃ¡Â»â¡p cÃÂ³ thÃ¡Â»Æ ÃâÃÂ°Ã¡Â»Â£c cÃ¡ÂºÂ¥u hÃÂ¬nh trÃÂªn Outlook, Thunderbird vÃÂ  thiÃ¡ÂºÂ¿t bÃ¡Â»â¹ di ÃâÃ¡Â»â¢ng."
+                                                  }
+                                  },
+                                  {
+                                      "id":  7,
+                                      "payload":  {
+                                                      "document_id":  "DOC-007",
+                                                      "title":  "Há» thá»ng ticket há» trá»£",
+                                                      "domain":  "cong_nghe",
+                                                      "department":  "IT",
+                                                      "doc_type":  "quy_trinh",
+                                                      "doc_status":  "ACTIVE",
+                                                      "text":  "CÃ¡c sá»± cá» ká»¹ thuáº­t cáº§n ÄÆ°á»£c ghi nháº­n qua há» thá»ng ticket Äá» Æ°u tiÃªn xá»­ lÃ½."
+                                                  }
+                                  },
+                                  {
+                                      "id":  8,
+                                      "payload":  {
+                                                      "document_id":  "DOC-008",
+                                                      "title":  "Quy trÃ¬nh backup dá»¯ liá»u",
+                                                      "domain":  "cong_nghe",
+                                                      "department":  "IT",
+                                                      "doc_type":  "quy_trinh",
+                                                      "doc_status":  "ACTIVE",
+                                                      "text":  "Backup dá»¯ liá»u hÃ ng tuáº§n ÄÆ°á»£c thá»±c hiá»n tá»± Äá»ng trÃªn há» thá»ng lÆ°u trá»¯ trung tÃ¢m."
+                                                  }
+                                  },
+                                  {
+                                      "id":  9,
+                                      "payload":  {
+                                                      "document_id":  "DOC-009",
+                                                      "title":  "ChÃ­nh sÃ¡ch mua sáº¯m",
+                                                      "domain":  "hanh_chinh",
+                                                      "department":  "PHONG_HC",
+                                                      "doc_type":  "chinh_sach",
+                                                      "doc_status":  "ACTIVE",
+                                                      "text":  "YÃªu cáº§u mua sáº¯m dÆ°á»i ngÆ°á»¡ng háº¡n má»©c cáº§n cÃ³ xÃ¡c nháº­n cá»§a quáº£n lÃ½ trá»±c tiáº¿p."
+                                                  }
+                                  },
+                                  {
+                                      "id":  10,
+                                      "payload":  {
+                                                      "document_id":  "DOC-010",
+                                                      "title":  "Há» sÆ¡ nhÃ¢n sá»±",
+                                                      "domain":  "nhan_su",
+                                                      "department":  "BAN_LE",
+                                                      "doc_type":  "mau",
+                                                      "doc_status":  "ACTIVE",
+                                                      "text":  "Há» sÆ¡ nhÃ¢n sá»± pháº£i ÄÆ°á»£c lÆ°u trá»¯ theo quy Äá»nh báº£o máº­t vÃ  cáº­p nháº­t hÃ ng quÃ½."
+                                                  }
+                                  },
+                                  {
+                                      "id":  11,
+                                      "payload":  {
+                                                      "document_id":  "DOC-011",
+                                                      "title":  "CÃ´ng nghá» AI trong ná»i bá»",
+                                                      "domain":  "cong_nghe",
+                                                      "department":  "IT",
+                                                      "doc_type":  "thong_tin",
+                                                      "doc_status":  "ACTIVE",
+                                                      "text":  "CÃ¡c giáº£i phÃ¡p AI ná»i bá» ÄÆ°á»£c giá»i háº¡n cho viá»c tá»i Æ°u quy trÃ¬nh vÃ  khÃ´ng thay tháº¿ quyáº¿t Äá»nh cá»§a con ngÆ°á»i."
+                                                  }
+                                  },
+                                  {
+                                      "id":  12,
+                                      "payload":  {
+                                                      "document_id":  "DOC-012",
+                                                      "title":  "Quy Äá»nh bÃ¡o cÃ¡o thÃ¡ng",
+                                                      "domain":  "hanh_chinh",
+                                                      "department":  "PHONG_HC",
+                                                      "doc_type":  "quy_dinh",
+                                                      "doc_status":  "ACTIVE",
+                                                      "text":  "BÃ¡o cÃ¡o thÃ¡ng cáº§n ÄÆ°á»£c gá»­i ÄÃºng háº¡n vÃ o ngÃ y 5 hÃ ng thÃ¡ng Äá» Äáº£m báº£o tiáº¿n Äá» hoáº¡t Äá»ng."
+                                                  }
+                                  }
+                              ],
+                   "next_page_offset":  null
+               },
+    "status":  "ok",
+    "time":  0.000999726
+}

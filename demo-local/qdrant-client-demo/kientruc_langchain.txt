@@ -1,0 +1,119 @@
+Báo cáo nhanh (03/08/2026): Đánh giá khả năng ứng dụng LangChain cho bài toán Smart Search – TPBank
+
+Những vấn đề thực hiện nghiên cứu:
+1) Mục tiêu bài toán
+2) Phân tích luồng hoạt động bài toán
+3) Tổng quan về langchain
+4) Đánh giá tổng quan về sự góp langchain cho bài toán smartsearch
+5) Đánh giá đóng góp của LangChain chi tiết cho từng thành phần
+Những phần đã thực hiện nghiên cứu:
+1) Mục tiêu bài toán
+2) Phân tích luồng hoạt động bài toán
+3) Tổng quan về langchain
+4) Đánh giá tổng quan về sự góp langchain cho bài toán smartsearch
+Những phần sẽ thực hiện trong ngày tiếp theo
+1) Đánh giá đóng góp của LangChain chi tiết cho từng thành phần
+
+Báo cáo chi tiết
+Phần I – Mục tiêu bài toán
+1.1. Bối Cảnh & Quy Mô
+TPBank hiện vận hành hệ thống quản lý văn bản nội bộ eISO với quy mô rất lớn:
+Chỉ số Giá trị
+
+Tổng số văn bản 173.479
+Văn bản còn hiệu lực 139.921
+Dung lượng lưu trữ 682 GB
+Upload mới ~200 văn bản/tháng
+Lượt tra cứu ~35.000 lượt/ngày
+Hệ thống hiện tại chỉ hỗ trợ tìm kiếm từ khóa (keyword search) truyền thống, không đáp ứng được nhu cầu tìm kiếm theo ngữ nghĩa (semantic search). Bài toán Smart Search được đặt ra nhằm xây dựng một hệ thống tìm kiếm thông minh, kết hợp AI/NLP, cho phép tra cứu văn bản nội bộ ngân hàng bằng ngôn ngữ tự nhiên tiếng Việt.
+1.2. Yêu Cầu Chức Năng Chính
+● Tìm kiếm NLP: Tiếng Việt tự nhiên, từ viết tắt, đồng nghĩa, lỗi chính tả, thuật ngữ ngành banking.
+● Hybrid Search: Kết hợp Keyword/BM25, Semantic/Vector Search, Metadata Filter và Reranking.
+● Kết quả ngữ cảnh: Hiển thị tiêu đề, mã văn bản, trạng thái hiệu lực, đoạn nội dung liên quan, highlight và lý do gợi ý.
+● Phân quyền ACL: Lọc theo 3 chiều: Department (3 cấp độ), Users Whitelist, Special Groups.
+● Pipeline Ingestion: Download tự động, Parse đa định dạng (PDF, DOCX), Chunking thông minh (structure-aware), Embedding & Indexing.
+● Quản trị: Từ điển đồng nghĩa (Synonym dictionary), Quản lý Metadata, Giám sát Pipeline, Feedback analytics.
+1.3. Yêu Cầu Phi Chức Năng
+Yêu cầu Chỉ tiêu
+
+Uptime > 99.5%
+TTFT (P95) ≤ 30 giây
+TPS (Token Per Second) ≥ 45/s
+Người dùng đồng thời 5.000–10.000 users/30 phút (CCU lên tới 100)
+Peak load 30.000 users/30 phút
+Throughput ≥ 50 TPS
+Bảo mật On-premise/hybrid, không gửi dữ liệu ra ngoài
+Chống Hallucination Đánh giá qua RAGAS, HaluEval, TruthfulQA
+
+Phần II – Phân Tích Luồng Xử Lý Chi Tiết
+
+Hệ thống Smart Search có 2 luồng xử lý chính: Luồng Ingestion (index dữ liệu) và Luồng Search/Q&A (tìm kiếm & trả lời).
+2.1. Luồng Indexing
+Luồng xử lý bao gồm các bước chính:
+1. Bước 1 – Thu thập tài liệu (Download): Service mas-manage-document-service quản lý vòng đời tài liệu với 2 chế độ (Batch Schedule Automatic cho văn bản hiện hữu và Event-Driven cho văn bản thay đổi). Nếu nhận tài liệu lỗi thì Retry lại 2-3 lần.
+2. Bước 2 – Parsing: Ưu tiên tool Docling – MIT license, giữ bảng biểu và layout tốt. Backup qua LLMs inhouse. Output bắt buộc là file Markdown giữ nguyên cấu trúc heading. Nếu nhận tài liệu lỗi thì Retry lại 2-3 lần.
+3. Bước 3 – Chunking: Áp dụng chiến lược Structure-aware chunking để giữ nguyên ngữ nghĩa trong từng đoạn. Kết hợp Semantic Chunking + Sentence Splitting 
+4. Bước 4 – Embedding: Sử dụng inhouse hoặc cloud
+5. Bước 5 – Metadata: LLMs đọc nội dung sinh list meta-data 
+6. Bước 5 – Indexing: Lưu trữ vector tại Qdrant Cluster và lưu metadata tại Oracle DB.
+2.2. Luồng Search/Q&A
+Cấu trúc luồng Search/Q&A được chia làm 5 tầng xử lý:
+1. Bước 1 – Embedding Query user 
+2. Bước 2 – Query Understanding Layer:
+○ Query Rewriting: Chỉnh sửa câu hỏi theo ngữ cảnh, xử lý từ viết tắt, từ đồng nghĩa, lỗi chính tả.
+○ Multi-query Expansion: Mở rộng 1 câu hỏi gốc thành 3-5 câu hỏi phụ để tăng recall.
+○ Intent Classification: Phân loại ý định người dùng để điều hướng vào Knowledge Base phù hợp.
+3. Bước 3 – Hybrid Search:
+○ Vector Search (Qdrant Dense): Tìm kiếm theo ngữ nghĩa.
+○ Full-text Search (Qdrant Sparse / BM25 / Elasticsearch): Tìm kiếm theo từ khóa.
+○ Metadata Filter: Lọc theo loại VB, đơn vị ban hành, trạng thái, ngày hiệu lực, domain.
+○ Merge & RRF: Hợp nhất kết quả bằng phương pháp Reciprocal Rank Fusion.
+4. Bước 4 – Kiểm tra phân quyền:
+○ ACL Filtering: Nhận metada từ Oracle Lọc phân quyền 3 chiều (Department 3 levels, Users Whitelist, Special Groups) theo logic OR.
+○ Circuit Breaker: Tự động chuyển hướng sang Cloud Model Hub (Azure/Vertex) khi GPU on-premise quá tải.
+
+Phần III – Tổng quan về langchain
+3.1 LangChain là gì
+Giới thiệu
+angChain là một framework mã nguồn mở giúp xây dựng các ứng dụng sử dụng Large Language Models (LLMs). Framework này cung cấp các thành phần để kết nối mô hình ngôn ngữ với nhiều nguồn dữ liệu và chức năng khác nhau, từ đó tạo thành một quy trình xử lý (AI pipeline) hoàn chỉnh.
+• Các thành phần chính của LangChain bao gồm:
+• Prompt: Xây dựng và quản lý câu lệnh gửi đến LLM. 
+• Document: Tiếp nhận và xử lý dữ liệu từ các tài liệu. 
+• Retrieval: Tìm kiếm và truy xuất thông tin liên quan từ kho dữ liệu. 
+• Tool: Tích hợp các công cụ hoặc dịch vụ bên ngoài để mở rộng khả năng của LLM. 
+• Memory: Lưu trữ và duy trì ngữ cảnh của cuộc hội thoại hoặc quá trình xử lý. 
+• Output Parser: Chuẩn hóa và chuyển đổi kết quả từ LLM sang định dạng mong muốn. 
+Nhờ kết hợp các thành phần trên, LangChain cho phép xây dựng các ứng dụng AI có khả năng truy xuất dữ liệu, sử dụng công cụ bên ngoài và xử lý các quy trình nghiệp vụ phức tạp một cách linh hoạt.
+
+3.2 Kiến trúc tổng thể của langChain
+
+
+Trong đó:
+
+Thành phần Vai trò chính Đầu vào Đầu ra Ví dụ sử dụng
+Models (LLM/Chat Model) Thực hiện suy luận, sinh nội dung, trả lời câu hỏi, lập kế hoạch Prompt + Context Câu trả lời hoặc hành động GPT-4o, Claude, Gemini, Llama
+Prompt Template Chuẩn hóa và xây dựng prompt động từ dữ liệu đầu vào Biến đầu vào (question, context...) Prompt hoàn chỉnh ChatPromptTemplate
+Document Loader Đọc dữ liệu từ nhiều nguồn khác nhau File, Database, Website Document Objects PDF Loader, DOCX Loader, SQL Loader
+Text Splitter Chia tài liệu lớn thành các đoạn nhỏ (chunk) phù hợp với LLM Document Các Document Chunk RecursiveCharacterTextSplitter
+Embedding Model Chuyển văn bản thành vector ngữ nghĩa Text Chunk hoặc Query Embedding Vector OpenAI Embedding, BGE, E5, Sentence Transformer
+Vector Store Lưu trữ và đánh chỉ mục các vector để tìm kiếm Embedding Vector Kho dữ liệu Vector Qdrant, FAISS, Chroma, Pinecone
+Retriever Truy xuất các tài liệu liên quan nhất từ Vector DB hoặc Hybrid Search User Query Top-k Documents Vector Search, BM25, Hybrid Search
+Memory Lưu và quản lý ngữ cảnh hội thoại Hội thoại trước đó Context bổ sung Conversation Buffer Memory
+Tools Cho phép LLM tương tác với hệ thống bên ngoài Lệnh từ Agent/LLM Kết quả từ API, DB, Search... Oracle DB, REST API, Calculator
+Agent Quyết định sử dụng Tool nào và theo thứ tự nào để hoàn thành nhiệm vụ User Request Workflow thực thi ReAct Agent, Tool Calling Agent
+Output Parser Chuyển kết quả của LLM thành định dạng có cấu trúc Output từ LLM JSON, Object, Schema JSON Parser, Pydantic Parser
+LCEL (LangChain Expression Language) Kết nối các thành phần thành một pipeline thống nhất Runnable Components Pipeline hoàn chỉnh prompt | retriever | llm | parser
+
+
+
+Phần IV – Đánh giá tổng quan về sự góp langchain cho bài toán smartsearch
+Qua phân tích kiến trúc của hệ thống Smart Search, có thể thấy LangChain phù hợp để đảm nhận vai trò framework điều phối (Orchestration Framework) cho toàn bộ pipeline Retrieval-Augmented Generation (RAG). Thay vì trực tiếp thực hiện các tác vụ như lưu trữ dữ liệu, tìm kiếm hay suy luận, LangChain chịu trách nhiệm kết nối, điều phối và quản lý luồng xử lý giữa các thành phần trong hệ thống, giúp pipeline hoạt động theo một quy trình thống nhất và dễ mở rộng.
+Cần lưu ý rằng LangChain không thay thế các thành phần hạ tầng và AI, bao gồm:
+• Qdrant: Lưu trữ và tìm kiếm vector embedding. 
+• Oracle Database: Lưu trữ metadata và dữ liệu nghiệp vụ. 
+• Embedding Model: Chuyển đổi dữ liệu và truy vấn thành vector ngữ nghĩa. 
+• Large Language Model (LLM): Sinh câu trả lời dựa trên ngữ cảnh được cung cấp. 
+• Elasticsearch: Thực hiện tìm kiếm theo từ khóa và hỗ trợ Hybrid Search. 
+Thay vào đó, LangChain cung cấp một lớp điều phối giúp các thành phần trên phối hợp với nhau một cách liền mạch. Framework này sử dụng các abstraction như Document Loader, Text Splitter, Retriever, Prompt Template, Runnable và các thành phần xử lý khác để xây dựng một pipeline RAG hoàn chỉnh. Nhờ đó, dữ liệu được nạp, tiền xử lý, truy xuất, kết hợp với prompt và gửi đến LLM theo một quy trình chuẩn hóa, đồng thời giúp hệ thống dễ bảo trì, mở rộng và thay thế từng thành phần khi cần mà không ảnh hưởng đến toàn bộ kiến trúc.
+
+ 

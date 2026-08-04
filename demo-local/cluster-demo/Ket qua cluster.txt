@@ -1,0 +1,933 @@
+PS D:\Qdrant\demo-local\cluster-demo>
+PS D:\Qdrant\demo-local\cluster-demo> cd D:\Qdrant\demo-local\cluster-demo
+>> docker compose up -d
+[+] Running 5/5
+ ✔ Network cluster-demo_default  Created                                                                                                                                                                      0.0s
+ ✔ Container qdrant-node1        Started                                                                                                                                                                      0.6s
+ ✔ Container qdrant-node2        Started                                                                                                                                                                      1.0s
+ ✔ Container qdrant-node4        Started                                                                                                                                                                      0.9s
+ ✔ Container qdrant-node3        Started                                                                                                                                                                      0.9s
+PS D:\Qdrant\demo-local\cluster-demo> docker compose ps
+NAME           IMAGE                   COMMAND                  SERVICE        CREATED         STATUS         PORTS
+qdrant-node1   qdrant/qdrant:v1.12.0   "./entrypoint.sh --u…"   qdrant-node1   4 minutes ago   Up 4 minutes   0.0.0.0:6333-6335->6333-6335/tcp, [::]:6333-6335->6333-6335/tcp
+qdrant-node2   qdrant/qdrant:v1.12.0   "./entrypoint.sh --b…"   qdrant-node2   4 minutes ago   Up 4 minutes   0.0.0.0:6343->6333/tcp, [::]:6343->6333/tcp, 0.0.0.0:6344->6334/tcp, [::]:6344->6334/tcp, 0.0.0.0:6345->6335/tcp, [::]:6345->6335/tcp
+qdrant-node3   qdrant/qdrant:v1.12.0   "./entrypoint.sh --b…"   qdrant-node3   4 minutes ago   Up 4 minutes   0.0.0.0:6353->6333/tcp, [::]:6353->6333/tcp, 0.0.0.0:6354->6334/tcp, [::]:6354->6334/tcp, 0.0.0.0:6355->6335/tcp, [::]:6355->6335/tcp
+qdrant-node4   qdrant/qdrant:v1.12.0   "./entrypoint.sh --b…"   qdrant-node4   4 minutes ago   Up 4 minutes   0.0.0.0:6363->6333/tcp, [::]:6363->6333/tcp, 0.0.0.0:6364->6334/tcp, [::]:6364->6334/tcp, 0.0.0.0:6365->6335/tcp, [::]:6365->6335/tcp
+PS D:\Qdrant\demo-local\cluster-demo> Invoke-RestMethod -Uri "http://localhost:6333/cluster" | ConvertTo-Json -Depth 5
+{
+    "result":  {
+                   "status":  "enabled",
+                   "peer_id":  7635232162672259,
+                   "peers":  {
+                                 "2867989850515874":  {
+                                                          "uri":  "http://qdrant-node4:6335/"
+                                                      },
+                                 "8810942280413922":  {
+                                                          "uri":  "http://qdrant-node3:6335/"
+                                                      },
+                                 "7635232162672259":  {
+                                                          "uri":  "http://qdrant-node1:6335/"
+                                                      },
+                                 "2057929853941450":  {
+                                                          "uri":  "http://qdrant-node2:6335/"
+                                                      }
+                             },
+                   "raft_info":  {
+                                     "term":  1,
+                                     "commit":  11,
+                                     "pending_operations":  0,
+                                     "leader":  7635232162672259,
+                                     "role":  "Leader",
+                                     "is_voter":  true
+                                 },
+                   "consensus_thread_status":  {
+                                                   "consensus_thread_status":  "working",
+                                                   "last_update":  "2026-07-29T08:28:35.911380325Z"
+                                               },
+                   "message_send_failures":  {
+
+                                             }
+               },
+    "status":  "ok",
+    "time":  0.000013037
+}
+PS D:\Qdrant\demo-local\cluster-demo> Invoke-RestMethod -Uri "http://localhost:6333"
+>> # Node 2
+>> Invoke-RestMethod -Uri "http://localhost:6343"
+>> # Node 3
+>> Invoke-RestMethod -Uri "http://localhost:6353"
+>> # Node 4
+>> Invoke-RestMethod -Uri "http://localhost:6363"
+
+title                         version commit
+-----                         ------- ------
+qdrant - vector search engine 1.12.0  a0d2eccac0c179116214e7cb3583359c80d41998
+qdrant - vector search engine 1.12.0  a0d2eccac0c179116214e7cb3583359c80d41998
+qdrant - vector search engine 1.12.0  a0d2eccac0c179116214e7cb3583359c80d41998
+qdrant - vector search engine 1.12.0  a0d2eccac0c179116214e7cb3583359c80d41998
+
+
+PS D:\Qdrant\demo-local\cluster-demo> $body = @{
+>>     vectors = @{
+>>         dense = @{
+>>             size = 384
+>>             distance = "Cosine"
+>>         }
+>>     }
+>>     shard_number = 4
+>>     replication_factor = 2
+>>     write_consistency_factor = 1
+>> } | ConvertTo-Json -Depth 5
+>>
+>> Invoke-RestMethod -Method Put -Uri "http://localhost:6333/collections/smart_search_cluster" -ContentType "application/json" -Body $body
+
+result status        time
+------ ------        ----
+  True ok     1.680327928
+
+
+PS D:\Qdrant\demo-local\cluster-demo> $result = Invoke-RestMethod -Uri "http://localhost:6333/collections/smart_search_cluster/cluster"
+>> $result | ConvertTo-Json -Depth 10
+{
+    "result":  {
+                   "peer_id":  7635232162672259,
+                   "shard_count":  4,
+                   "local_shards":  [
+                                        {
+                                            "shard_id":  1,
+                                            "points_count":  0,
+                                            "state":  "Active"
+                                        },
+                                        {
+                                            "shard_id":  3,
+                                            "points_count":  0,
+                                            "state":  "Active"
+                                        }
+                                    ],
+                   "remote_shards":  [
+                                         {
+                                             "shard_id":  0,
+                                             "peer_id":  8810942280413922,
+                                             "state":  "Active"
+                                         },
+                                         {
+                                             "shard_id":  0,
+                                             "peer_id":  2867989850515874,
+                                             "state":  "Active"
+                                         },
+                                         {
+                                             "shard_id":  1,
+                                             "peer_id":  2057929853941450,
+                                             "state":  "Active"
+                                         },
+                                         {
+                                             "shard_id":  2,
+                                             "peer_id":  2867989850515874,
+                                             "state":  "Active"
+                                         },
+                                         {
+                                             "shard_id":  2,
+                                             "peer_id":  8810942280413922,
+                                             "state":  "Active"
+                                         },
+                                         {
+                                             "shard_id":  3,
+                                             "peer_id":  2057929853941450,
+                                             "state":  "Active"
+                                         }
+                                     ],
+                   "shard_transfers":  [
+
+                                       ]
+               },
+    "status":  "ok",
+    "time":  0.00188425
+}
+PS D:\Qdrant\demo-local\cluster-demo> $fields = @("doc_status", "domain", "department", "doc_type")
+>>
+>> foreach ($field in $fields) {
+>>     $body = @{
+>>         field_name = $field
+>>         field_schema = "keyword"
+>>     } | ConvertTo-Json
+>>
+>>     Invoke-RestMethod -Method Put -Uri "http://localhost:6333/collections/smart_search_cluster/index" -ContentType "application/json" -Body $body
+>>     Write-Host "Created index: $field"
+>> }
+
+Created index: doc_status
+Created index: domain
+result                                 status        time
+------                                 ------        ----
+@{operation_id=1; status=acknowledged} ok     0.101166906
+@{operation_id=2; status=acknowledged} ok     0.119716843
+@{operation_id=5; status=acknowledged} ok     0.149509708
+Created index: department
+@{operation_id=7; status=acknowledged} ok     0.201804971
+Created index: doc_type
+
+
+PS D:\Qdrant\demo-local\cluster-demo> $json1 = Get-Content -Raw -Path "..\sample_data\points_batch_01.json"
+>> Invoke-RestMethod -Method Put -Uri "http://localhost:6333/collections/smart_search_cluster/points?wait=true" -ContentType "application/json" -Body $json1
+>>
+>> $json2 = Get-Content -Raw -Path "..\sample_data\points_batch_02.json"
+>> Invoke-RestMethod -Method Put -Uri "http://localhost:6333/collections/smart_search_cluster/points?wait=true" -ContentType "application/json" -Body $json2
+
+result                              status        time
+------                              ------        ----
+@{operation_id=8; status=completed} ok     0.046320074
+@{operation_id=8; status=completed} ok     0.020458543
+
+
+PS D:\Qdrant\demo-local\cluster-demo> (Invoke-RestMethod -Uri "http://localhost:6333/collections/smart_search_cluster").result.points_count
+12
+PS D:\Qdrant\demo-local\cluster-demo> $query = Get-Content -Raw -Path "..\queries\search_basic.json"
+PS D:\Qdrant\demo-local\cluster-demo> $query = Get-Content -Raw -Path "..\queries\search_basic.json"
+PS D:\Qdrant\demo-local\cluster-demo> Write-Host "=== SEARCH QUA NODE 1 ==="
+>> Invoke-RestMethod -Method Post -Uri "http://localhost:6333/collections/smart_search_cluster/points/query" -ContentType "application/json" -Body $query | ConvertTo-Json -Depth 5
+=== SEARCH QUA NODE 1 ===
+{
+    "result":  {
+                   "points":  [
+                                  {
+                                      "id":  10,
+                                      "version":  8,
+                                      "score":  0.120049395,
+                                      "payload":  {
+                                                      "document_id":  "DOC-009",
+                                                      "title":  "Quy trinh deploy Production",
+                                                      "domain":  "cong_nghe",
+                                                      "department":  "CNTT",
+                                                      "doc_type":  "quy_trinh",
+                                                      "doc_status":  "ACTIVE",
+                                                      "text":  "Deploy production chi thuc hien 22h-6h hoac cuoi tuan. Can CAB approval truoc 48h."
+                                                  }
+                                  },
+                                  {
+                                      "id":  11,
+                                      "version":  9,
+                                      "score":  0.088837,
+                                      "payload":  {
+                                                      "doc_type":  "quy_dinh",
+                                                      "title":  "Quy dinh su dung VPN",
+                                                      "domain":  "cong_nghe",
+                                                      "department":  "ALL",
+                                                      "text":  "VPN bat buoc khi truy cap he thong noi bo tu ben ngoai. Dung GlobalProtect.",
+                                                      "doc_status":  "ACTIVE",
+                                                      "document_id":  "DOC-010"
+                                                  }
+                                  },
+                                  {
+                                      "id":  2,
+                                      "version":  8,
+                                      "score":  0.07027188,
+                                      "payload":  {
+                                                      "domain":  "nhan_su",
+                                                      "doc_type":  "quy_dinh",
+                                                      "doc_status":  "ACTIVE",
+                                                      "document_id":  "DOC-001",
+                                                      "text":  "Nhan vien co tham nien tren 5 nam duoc cong them 1 ngay phep.",
+                                                      "title":  "Quy dinh nghi phep nam 2024",
+                                                      "department":  "BAN_LE"
+                                                  }
+                                  },
+                                  {
+                                      "id":  1,
+                                      "version":  8,
+                                      "score":  0.06854092,
+                                      "payload":  {
+                                                      "document_id":  "DOC-001",
+                                                      "title":  "Quy dinh nghi phep nam 2024",
+                                                      "domain":  "nhan_su",
+                                                      "department":  "BAN_LE",
+                                                      "doc_type":  "quy_dinh",
+                                                      "doc_status":  "ACTIVE",
+                                                      "text":  "Nhan vien duoc nghi phep 12 ngay moi nam. Phep nam tinh tu 1/1 den 31/12."
+                                                  }
+                                  },
+                                  {
+                                      "id":  5,
+                                      "version":  8,
+                                      "score":  0.046845645,
+                                      "payload":  {
+                                                      "text":  "KPI duoc danh gia vao tuan cuoi moi quy. Ket qua phan loai 5 muc.",
+                                                      "doc_status":  "ACTIVE",
+                                                      "department":  "ALL",
+                                                      "title":  "Quy dinh danh gia KPI",
+                                                      "doc_type":  "quy_dinh",
+                                                      "document_id":  "DOC-004",
+                                                      "domain":  "nhan_su"
+                                                  }
+                                  }
+                              ]
+               },
+    "status":  "ok",
+    "time":  0.011048438
+}
+PS D:\Qdrant\demo-local\cluster-demo> Write-Host "=== SEARCH QUA NODE 2 ==="
+>> Invoke-RestMethod -Method Post -Uri "http://localhost:6343/collections/smart_search_cluster/points/query" -ContentType "application/json" -Body $query | ConvertTo-Json -Depth 5
+=== SEARCH QUA NODE 2 ===
+{
+    "result":  {
+                   "points":  [
+                                  {
+                                      "id":  10,
+                                      "version":  8,
+                                      "score":  0.120049395,
+                                      "payload":  {
+                                                      "title":  "Quy trinh deploy Production",
+                                                      "document_id":  "DOC-009",
+                                                      "text":  "Deploy production chi thuc hien 22h-6h hoac cuoi tuan. Can CAB approval truoc 48h.",
+                                                      "domain":  "cong_nghe",
+                                                      "department":  "CNTT",
+                                                      "doc_type":  "quy_trinh",
+                                                      "doc_status":  "ACTIVE"
+                                                  }
+                                  },
+                                  {
+                                      "id":  11,
+                                      "version":  9,
+                                      "score":  0.088837,
+                                      "payload":  {
+                                                      "title":  "Quy dinh su dung VPN",
+                                                      "domain":  "cong_nghe",
+                                                      "doc_status":  "ACTIVE",
+                                                      "text":  "VPN bat buoc khi truy cap he thong noi bo tu ben ngoai. Dung GlobalProtect.",
+                                                      "doc_type":  "quy_dinh",
+                                                      "department":  "ALL",
+                                                      "document_id":  "DOC-010"
+                                                  }
+                                  },
+                                  {
+                                      "id":  2,
+                                      "version":  8,
+                                      "score":  0.07027188,
+                                      "payload":  {
+                                                      "doc_status":  "ACTIVE",
+                                                      "department":  "BAN_LE",
+                                                      "doc_type":  "quy_dinh",
+                                                      "title":  "Quy dinh nghi phep nam 2024",
+                                                      "text":  "Nhan vien co tham nien tren 5 nam duoc cong them 1 ngay phep.",
+                                                      "domain":  "nhan_su",
+                                                      "document_id":  "DOC-001"
+                                                  }
+                                  },
+                                  {
+                                      "id":  1,
+                                      "version":  8,
+                                      "score":  0.06854092,
+                                      "payload":  {
+                                                      "department":  "BAN_LE",
+                                                      "doc_status":  "ACTIVE",
+                                                      "document_id":  "DOC-001",
+                                                      "doc_type":  "quy_dinh",
+                                                      "text":  "Nhan vien duoc nghi phep 12 ngay moi nam. Phep nam tinh tu 1/1 den 31/12.",
+                                                      "domain":  "nhan_su",
+                                                      "title":  "Quy dinh nghi phep nam 2024"
+                                                  }
+                                  },
+                                  {
+                                      "id":  5,
+                                      "version":  8,
+                                      "score":  0.046845645,
+                                      "payload":  {
+                                                      "doc_type":  "quy_dinh",
+                                                      "title":  "Quy dinh danh gia KPI",
+                                                      "text":  "KPI duoc danh gia vao tuan cuoi moi quy. Ket qua phan loai 5 muc.",
+                                                      "document_id":  "DOC-004",
+                                                      "doc_status":  "ACTIVE",
+                                                      "domain":  "nhan_su",
+                                                      "department":  "ALL"
+                                                  }
+                                  }
+                              ]
+               },
+    "status":  "ok",
+    "time":  0.009945458
+}
+PS D:\Qdrant\demo-local\cluster-demo> Write-Host "=== SEARCH QUA NODE 3 ==="
+>> Invoke-RestMethod -Method Post -Uri "http://localhost:6353/collections/smart_search_cluster/points/query" -ContentType "application/json" -Body $query | ConvertTo-Json -Depth 5
+=== SEARCH QUA NODE 3 ===
+{
+    "result":  {
+                   "points":  [
+                                  {
+                                      "id":  10,
+                                      "version":  8,
+                                      "score":  0.120049395,
+                                      "payload":  {
+                                                      "domain":  "cong_nghe",
+                                                      "doc_status":  "ACTIVE",
+                                                      "document_id":  "DOC-009",
+                                                      "text":  "Deploy production chi thuc hien 22h-6h hoac cuoi tuan. Can CAB approval truoc 48h.",
+                                                      "doc_type":  "quy_trinh",
+                                                      "title":  "Quy trinh deploy Production",
+                                                      "department":  "CNTT"
+                                                  }
+                                  },
+                                  {
+                                      "id":  11,
+                                      "version":  9,
+                                      "score":  0.088837,
+                                      "payload":  {
+                                                      "title":  "Quy dinh su dung VPN",
+                                                      "text":  "VPN bat buoc khi truy cap he thong noi bo tu ben ngoai. Dung GlobalProtect.",
+                                                      "domain":  "cong_nghe",
+                                                      "document_id":  "DOC-010",
+                                                      "doc_status":  "ACTIVE",
+                                                      "department":  "ALL",
+                                                      "doc_type":  "quy_dinh"
+                                                  }
+                                  },
+                                  {
+                                      "id":  2,
+                                      "version":  8,
+                                      "score":  0.07027188,
+                                      "payload":  {
+                                                      "doc_type":  "quy_dinh",
+                                                      "department":  "BAN_LE",
+                                                      "title":  "Quy dinh nghi phep nam 2024",
+                                                      "doc_status":  "ACTIVE",
+                                                      "text":  "Nhan vien co tham nien tren 5 nam duoc cong them 1 ngay phep.",
+                                                      "domain":  "nhan_su",
+                                                      "document_id":  "DOC-001"
+                                                  }
+                                  },
+                                  {
+                                      "id":  1,
+                                      "version":  8,
+                                      "score":  0.06854092,
+                                      "payload":  {
+                                                      "doc_type":  "quy_dinh",
+                                                      "doc_status":  "ACTIVE",
+                                                      "department":  "BAN_LE",
+                                                      "text":  "Nhan vien duoc nghi phep 12 ngay moi nam. Phep nam tinh tu 1/1 den 31/12.",
+                                                      "domain":  "nhan_su",
+                                                      "title":  "Quy dinh nghi phep nam 2024",
+                                                      "document_id":  "DOC-001"
+                                                  }
+                                  },
+                                  {
+                                      "id":  5,
+                                      "version":  8,
+                                      "score":  0.046845645,
+                                      "payload":  {
+                                                      "document_id":  "DOC-004",
+                                                      "doc_status":  "ACTIVE",
+                                                      "text":  "KPI duoc danh gia vao tuan cuoi moi quy. Ket qua phan loai 5 muc.",
+                                                      "title":  "Quy dinh danh gia KPI",
+                                                      "doc_type":  "quy_dinh",
+                                                      "department":  "ALL",
+                                                      "domain":  "nhan_su"
+                                                  }
+                                  }
+                              ]
+               },
+    "status":  "ok",
+    "time":  0.004939685
+}
+PS D:\Qdrant\demo-local\cluster-demo> Write-Host "=== SEARCH QUA NODE 4 ==="
+>> Invoke-RestMethod -Method Post -Uri "http://localhost:6363/collections/smart_search_cluster/points/query" -ContentType "application/json" -Body $query | ConvertTo-Json -Depth 5
+=== SEARCH QUA NODE 4 ===
+{
+    "result":  {
+                   "points":  [
+                                  {
+                                      "id":  10,
+                                      "version":  8,
+                                      "score":  0.120049395,
+                                      "payload":  {
+                                                      "document_id":  "DOC-009",
+                                                      "domain":  "cong_nghe",
+                                                      "title":  "Quy trinh deploy Production",
+                                                      "doc_type":  "quy_trinh",
+                                                      "doc_status":  "ACTIVE",
+                                                      "text":  "Deploy production chi thuc hien 22h-6h hoac cuoi tuan. Can CAB approval truoc 48h.",
+                                                      "department":  "CNTT"
+                                                  }
+                                  },
+                                  {
+                                      "id":  11,
+                                      "version":  9,
+                                      "score":  0.088837,
+                                      "payload":  {
+                                                      "title":  "Quy dinh su dung VPN",
+                                                      "document_id":  "DOC-010",
+                                                      "doc_status":  "ACTIVE",
+                                                      "domain":  "cong_nghe",
+                                                      "doc_type":  "quy_dinh",
+                                                      "text":  "VPN bat buoc khi truy cap he thong noi bo tu ben ngoai. Dung GlobalProtect.",
+                                                      "department":  "ALL"
+                                                  }
+                                  },
+                                  {
+                                      "id":  2,
+                                      "version":  8,
+                                      "score":  0.07027188,
+                                      "payload":  {
+                                                      "department":  "BAN_LE",
+                                                      "text":  "Nhan vien co tham nien tren 5 nam duoc cong them 1 ngay phep.",
+                                                      "title":  "Quy dinh nghi phep nam 2024",
+                                                      "document_id":  "DOC-001",
+                                                      "doc_status":  "ACTIVE",
+                                                      "doc_type":  "quy_dinh",
+                                                      "domain":  "nhan_su"
+                                                  }
+                                  },
+                                  {
+                                      "id":  1,
+                                      "version":  8,
+                                      "score":  0.06854092,
+                                      "payload":  {
+                                                      "doc_status":  "ACTIVE",
+                                                      "domain":  "nhan_su",
+                                                      "department":  "BAN_LE",
+                                                      "text":  "Nhan vien duoc nghi phep 12 ngay moi nam. Phep nam tinh tu 1/1 den 31/12.",
+                                                      "title":  "Quy dinh nghi phep nam 2024",
+                                                      "doc_type":  "quy_dinh",
+                                                      "document_id":  "DOC-001"
+                                                  }
+                                  },
+                                  {
+                                      "id":  5,
+                                      "version":  8,
+                                      "score":  0.046845645,
+                                      "payload":  {
+                                                      "doc_type":  "quy_dinh",
+                                                      "domain":  "nhan_su",
+                                                      "department":  "ALL",
+                                                      "document_id":  "DOC-004",
+                                                      "text":  "KPI duoc danh gia vao tuan cuoi moi quy. Ket qua phan loai 5 muc.",
+                                                      "doc_status":  "ACTIVE",
+                                                      "title":  "Quy dinh danh gia KPI"
+                                                  }
+                                  }
+                              ]
+               },
+    "status":  "ok",
+    "time":  0.005844846
+}
+PS D:\Qdrant\demo-local\cluster-demo> docker stop qdrant-node2
+>> Write-Host "Node 2 da tat!"
+qdrant-node2
+Node 2 da tat!
+PS D:\Qdrant\demo-local\cluster-demo> Invoke-RestMethod -Uri "http://localhost:6333/cluster" | ConvertTo-Json -Depth 5
+{
+    "result":  {
+                   "status":  "enabled",
+                   "peer_id":  7635232162672259,
+                   "peers":  {
+                                 "2057929853941450":  {
+                                                          "uri":  "http://qdrant-node2:6335/"
+                                                      },
+                                 "2867989850515874":  {
+                                                          "uri":  "http://qdrant-node4:6335/"
+                                                      },
+                                 "7635232162672259":  {
+                                                          "uri":  "http://qdrant-node1:6335/"
+                                                      },
+                                 "8810942280413922":  {
+                                                          "uri":  "http://qdrant-node3:6335/"
+                                                      }
+                             },
+                   "raft_info":  {
+                                     "term":  1,
+                                     "commit":  24,
+                                     "pending_operations":  0,
+                                     "leader":  7635232162672259,
+                                     "role":  "Leader",
+                                     "is_voter":  true
+                                 },
+                   "consensus_thread_status":  {
+                                                   "consensus_thread_status":  "working",
+                                                   "last_update":  "2026-07-29T08:53:03.035972020Z"
+                                               },
+                   "message_send_failures":  {
+                                                 "http://qdrant-node2:6335/":  {
+                                                                                   "count":  5,
+                                                                                   "latest_error":  "Error in closure supplied to transport channel pool: status: Unavailable, message: \"error trying to connect: deadline has elapsed\", details: [], metadata: MetadataMap { headers: {} }",
+                                                                                   "latest_error_timestamp":  "2026-07-29T08:53:01.239340406Z"
+                                                                               }
+                                             }
+               },
+    "status":  "ok",
+    "time":  0.000036069
+}
+PS D:\Qdrant\demo-local\cluster-demo> $query = Get-Content -Raw -Path "..\queries\search_filter_domain.json"
+>> Invoke-RestMethod -Method Post -Uri "http://localhost:6333/collections/smart_search_cluster/points/query" -ContentType "application/json" -Body $query | ConvertTo-Json -Depth 5
+{
+    "result":  {
+                   "points":  [
+                                  {
+                                      "id":  9,
+                                      "version":  8,
+                                      "score":  0.13979244,
+                                      "payload":  {
+                                                      "document_id":  "DOC-008",
+                                                      "title":  "Huong dan su dung eISO",
+                                                      "domain":  "cong_nghe",
+                                                      "department":  "ALL",
+                                                      "doc_type":  "huong_dan",
+                                                      "doc_status":  "ACTIVE",
+                                                      "text":  "Dang nhap he thong eISO bang tai khoan AD. Quen mat khau lien he helpdesk."
+                                                  }
+                                  },
+                                  {
+                                      "id":  11,
+                                      "version":  9,
+                                      "score":  0.04921663,
+                                      "payload":  {
+                                                      "title":  "Quy dinh su dung VPN",
+                                                      "department":  "ALL",
+                                                      "document_id":  "DOC-010",
+                                                      "doc_status":  "ACTIVE",
+                                                      "domain":  "cong_nghe",
+                                                      "text":  "VPN bat buoc khi truy cap he thong noi bo tu ben ngoai. Dung GlobalProtect.",
+                                                      "doc_type":  "quy_dinh"
+                                                  }
+                                  },
+                                  {
+                                      "id":  10,
+                                      "version":  8,
+                                      "score":  0.044091165,
+                                      "payload":  {
+                                                      "document_id":  "DOC-009",
+                                                      "title":  "Quy trinh deploy Production",
+                                                      "domain":  "cong_nghe",
+                                                      "department":  "CNTT",
+                                                      "doc_type":  "quy_trinh",
+                                                      "doc_status":  "ACTIVE",
+                                                      "text":  "Deploy production chi thuc hien 22h-6h hoac cuoi tuan. Can CAB approval truoc 48h."
+                                                  }
+                                  },
+                                  {
+                                      "id":  7,
+                                      "version":  9,
+                                      "score":  -0.011515399,
+                                      "payload":  {
+                                                      "doc_type":  "chinh_sach",
+                                                      "department":  "CNTT",
+                                                      "document_id":  "DOC-006",
+                                                      "doc_status":  "ACTIVE",
+                                                      "domain":  "cong_nghe",
+                                                      "title":  "Chinh sach bao mat thong tin",
+                                                      "text":  "Moi nhan vien phai su dung mat khau manh co it nhat 12 ky tu."
+                                                  }
+                                  },
+                                  {
+                                      "id":  8,
+                                      "version":  9,
+                                      "score":  -0.06889442,
+                                      "payload":  {
+                                                      "document_id":  "DOC-007",
+                                                      "title":  "Quy trinh xu ly su co he thong",
+                                                      "domain":  "cong_nghe",
+                                                      "department":  "CNTT",
+                                                      "doc_type":  "quy_trinh",
+                                                      "doc_status":  "ACTIVE",
+                                                      "text":  "Su co phan loai 4 muc: P1 Critical, P2 High, P3 Medium, P4 Low."
+                                                  }
+                                  }
+                              ]
+               },
+    "status":  "ok",
+    "time":  0.004368375
+}
+PS D:\Qdrant\demo-local\cluster-demo> Invoke-RestMethod -Method Post -Uri "http://localhost:6353/collections/smart_search_cluster/points/query" -ContentType "application/json" -Body $query | ConvertTo-Json -Depth 5
+{
+    "result":  {
+                   "points":  [
+                                  {
+                                      "id":  9,
+                                      "version":  8,
+                                      "score":  0.13979244,
+                                      "payload":  {
+                                                      "domain":  "cong_nghe",
+                                                      "title":  "Huong dan su dung eISO",
+                                                      "department":  "ALL",
+                                                      "document_id":  "DOC-008",
+                                                      "doc_type":  "huong_dan",
+                                                      "doc_status":  "ACTIVE",
+                                                      "text":  "Dang nhap he thong eISO bang tai khoan AD. Quen mat khau lien he helpdesk."
+                                                  }
+                                  },
+                                  {
+                                      "id":  11,
+                                      "version":  9,
+                                      "score":  0.04921663,
+                                      "payload":  {
+                                                      "title":  "Quy dinh su dung VPN",
+                                                      "text":  "VPN bat buoc khi truy cap he thong noi bo tu ben ngoai. Dung GlobalProtect.",
+                                                      "domain":  "cong_nghe",
+                                                      "document_id":  "DOC-010",
+                                                      "doc_status":  "ACTIVE",
+                                                      "department":  "ALL",
+                                                      "doc_type":  "quy_dinh"
+                                                  }
+                                  },
+                                  {
+                                      "id":  10,
+                                      "version":  8,
+                                      "score":  0.044091165,
+                                      "payload":  {
+                                                      "department":  "CNTT",
+                                                      "document_id":  "DOC-009",
+                                                      "text":  "Deploy production chi thuc hien 22h-6h hoac cuoi tuan. Can CAB approval truoc 48h.",
+                                                      "doc_type":  "quy_trinh",
+                                                      "title":  "Quy trinh deploy Production",
+                                                      "doc_status":  "ACTIVE",
+                                                      "domain":  "cong_nghe"
+                                                  }
+                                  },
+                                  {
+                                      "id":  7,
+                                      "version":  9,
+                                      "score":  -0.011515399,
+                                      "payload":  {
+                                                      "doc_status":  "ACTIVE",
+                                                      "domain":  "cong_nghe",
+                                                      "text":  "Moi nhan vien phai su dung mat khau manh co it nhat 12 ky tu.",
+                                                      "doc_type":  "chinh_sach",
+                                                      "document_id":  "DOC-006",
+                                                      "title":  "Chinh sach bao mat thong tin",
+                                                      "department":  "CNTT"
+                                                  }
+                                  },
+                                  {
+                                      "id":  8,
+                                      "version":  9,
+                                      "score":  -0.06889442,
+                                      "payload":  {
+                                                      "title":  "Quy trinh xu ly su co he thong",
+                                                      "department":  "CNTT",
+                                                      "domain":  "cong_nghe",
+                                                      "doc_status":  "ACTIVE",
+                                                      "document_id":  "DOC-007",
+                                                      "text":  "Su co phan loai 4 muc: P1 Critical, P2 High, P3 Medium, P4 Low.",
+                                                      "doc_type":  "quy_trinh"
+                                                  }
+                                  }
+                              ]
+               },
+    "status":  "ok",
+    "time":  0.002954296
+}
+PS D:\Qdrant\demo-local\cluster-demo> docker start qdrant-node2
+>> Start-Sleep -Seconds 5
+>> Invoke-RestMethod -Uri "http://localhost:6333/cluster" | ConvertTo-Json -Depth 5
+qdrant-node2
+{
+    "result":  {
+                   "status":  "enabled",
+                   "peer_id":  7635232162672259,
+                   "peers":  {
+                                 "2057929853941450":  {
+                                                          "uri":  "http://qdrant-node2:6335/"
+                                                      },
+                                 "7635232162672259":  {
+                                                          "uri":  "http://qdrant-node1:6335/"
+                                                      },
+                                 "2867989850515874":  {
+                                                          "uri":  "http://qdrant-node4:6335/"
+                                                      },
+                                 "8810942280413922":  {
+                                                          "uri":  "http://qdrant-node3:6335/"
+                                                      }
+                             },
+                   "raft_info":  {
+                                     "term":  1,
+                                     "commit":  24,
+                                     "pending_operations":  0,
+                                     "leader":  7635232162672259,
+                                     "role":  "Leader",
+                                     "is_voter":  true
+                                 },
+                   "consensus_thread_status":  {
+                                                   "consensus_thread_status":  "working",
+                                                   "last_update":  "2026-07-29T08:53:55.282084082Z"
+                                               },
+                   "message_send_failures":  {
+
+                                             }
+               },
+    "status":  "ok",
+    "time":  7.661E-06
+}
+PS D:\Qdrant\demo-local\cluster-demo> docker stop qdrant-node3
+qdrant-node3
+PS D:\Qdrant\demo-local\cluster-demo> $body = @{
+>>     points = @(
+>>         @{
+>>             id = 100
+>>             vector = @{ dense = @(1..384 | ForEach-Object { [math]::Round((Get-Random -Minimum -100 -Maximum 100) / 100, 4) }) }
+>>             payload = @{
+>>                 document_id = "DOC-NEW"
+>>                 title = "Van ban moi upsert khi mat 1 node"
+>>                 domain = "cong_nghe"
+>>                 department = "CNTT"
+>>                 doc_type = "test"
+>>                 doc_status = "ACTIVE"
+>>                 text = "Day la van ban upsert khi node 3 da tat, chung minh cluster van ghi duoc."
+>>             }
+>>         }
+>>     )
+>> } | ConvertTo-Json -Depth 10
+>>
+>> Invoke-RestMethod -Method Put -Uri "http://localhost:6333/collections/smart_search_cluster/points?wait=true" -ContentType "application/json" -Body $body
+
+result                               status        time
+------                               ------        ----
+@{operation_id=10; status=completed} ok     6.581008207
+
+
+PS D:\Qdrant\demo-local\cluster-demo> docker start qdrant-node3
+>> Start-Sleep -Seconds 5
+>>
+>> # Verify: search từ Node 3 tìm thấy point mới
+>> $body2 = @{
+>>     ids = @(100)
+>>     with_payload = $true
+>> } | ConvertTo-Json -Depth 3
+>>
+>> Invoke-RestMethod -Method Post -Uri "http://localhost:6353/collections/smart_search_cluster/points" -ContentType "application/json" -Body $body2 | ConvertTo-Json -Depth 5
+qdrant-node3
+{
+    "result":  [
+                   {
+                       "id":  100,
+                       "payload":  {
+                                       "department":  "CNTT",
+                                       "domain":  "cong_nghe",
+                                       "text":  "Day la van ban upsert khi node 3 da tat, chung minh cluster van ghi duoc.",
+                                       "document_id":  "DOC-NEW",
+                                       "doc_status":  "ACTIVE",
+                                       "title":  "Van ban moi upsert khi mat 1 node",
+                                       "doc_type":  "test"
+                                   }
+                   }
+               ],
+    "status":  "ok",
+    "time":  0.001209736
+}
+PS D:\Qdrant\demo-local\cluster-demo> $info = Invoke-RestMethod -Uri "http://localhost:6333/collections/smart_search_cluster/cluster"
+>> $info | ConvertTo-Json -Depth 10
+{
+    "result":  {
+                   "peer_id":  7635232162672259,
+                   "shard_count":  4,
+                   "local_shards":  [
+                                        {
+                                            "shard_id":  1,
+                                            "points_count":  2,
+                                            "state":  "Active"
+                                        },
+                                        {
+                                            "shard_id":  3,
+                                            "points_count":  4,
+                                            "state":  "Active"
+                                        }
+                                    ],
+                   "remote_shards":  [
+                                         {
+                                             "shard_id":  0,
+                                             "peer_id":  8810942280413922,
+                                             "state":  "Active"
+                                         },
+                                         {
+                                             "shard_id":  0,
+                                             "peer_id":  2867989850515874,
+                                             "state":  "Active"
+                                         },
+                                         {
+                                             "shard_id":  1,
+                                             "peer_id":  2057929853941450,
+                                             "state":  "Active"
+                                         },
+                                         {
+                                             "shard_id":  2,
+                                             "peer_id":  2867989850515874,
+                                             "state":  "Active"
+                                         },
+                                         {
+                                             "shard_id":  2,
+                                             "peer_id":  8810942280413922,
+                                             "state":  "Active"
+                                         },
+                                         {
+                                             "shard_id":  3,
+                                             "peer_id":  2057929853941450,
+                                             "state":  "Active"
+                                         }
+                                     ],
+                   "shard_transfers":  [
+
+                                       ]
+               },
+    "status":  "ok",
+    "time":  0.000032111
+}
+PS D:\Qdrant\demo-local\cluster-demo>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

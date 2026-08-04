@@ -1,0 +1,62 @@
+[
+  {
+    "id": 7,
+    "document_id": "DOC-007",
+    "title": "Hệ thống ticket hỗ trợ",
+    "domain": "cong_nghe",
+    "department": "IT",
+    "doc_type": "quy_trinh",
+    "doc_status": "ACTIVE",
+    "text": "Các sự cố kỹ thuật cần được ghi nhận qua hệ thống ticket để ưu tiên xử lý."
+  },
+  {
+    "id": 8,
+    "document_id": "DOC-008",
+    "title": "Quy trình backup dữ liệu",
+    "domain": "cong_nghe",
+    "department": "IT",
+    "doc_type": "quy_trinh",
+    "doc_status": "ACTIVE",
+    "text": "Backup dữ liệu hàng tuần được thực hiện tự động trên hệ thống lưu trữ trung tâm."
+  },
+  {
+    "id": 9,
+    "document_id": "DOC-009",
+    "title": "Chính sách mua sắm",
+    "domain": "hanh_chinh",
+    "department": "PHONG_HC",
+    "doc_type": "chinh_sach",
+    "doc_status": "ACTIVE",
+    "text": "Yêu cầu mua sắm dưới ngưỡng hạn mức cần có xác nhận của quản lý trực tiếp."
+  },
+  {
+    "id": 10,
+    "document_id": "DOC-010",
+    "title": "Hồ sơ nhân sự",
+    "domain": "nhan_su",
+    "department": "BAN_LE",
+    "doc_type": "mau",
+    "doc_status": "ACTIVE",
+    "text": "Hồ sơ nhân sự phải được lưu trữ theo quy định bảo mật và cập nhật hàng quý."
+  },
+  {
+    "id": 11,
+    "document_id": "DOC-011",
+    "title": "Công nghệ AI trong nội bộ",
+    "domain": "cong_nghe",
+    "department": "IT",
+    "doc_type": "thong_tin",
+    "doc_status": "ACTIVE",
+    "text": "Các giải pháp AI nội bộ được giới hạn cho việc tối ưu quy trình và không thay thế quyết định của con người."
+  },
+  {
+    "id": 12,
+    "document_id": "DOC-012",
+    "title": "Quy định báo cáo tháng",
+    "domain": "hanh_chinh",
+    "department": "PHONG_HC",
+    "doc_type": "quy_dinh",
+    "doc_status": "ACTIVE",
+    "text": "Báo cáo tháng cần được gửi đúng hạn vào ngày 5 hàng tháng để đảm bảo tiến độ hoạt động."
+  }
+]
