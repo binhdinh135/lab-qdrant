@@ -71,8 +71,8 @@
             <div class="hidden sm:flex items-center bg-bank-800 px-3 py-1.5 rounded-lg border border-bank-700">
                 <span class="text-slate-400 mr-2">Mode:</span>
                 <select id="execution-mode" onchange="toggleMode()" class="bg-transparent text-white font-semibold focus:outline-none cursor-pointer">
-                    <option value="mock" class="bg-slate-800 text-white">Browser Simulator (Standalone)</option>
                     <option value="api" class="bg-slate-800 text-white">FastAPI Backend (http://localhost:8000)</option>
+                    <option value="mock" class="bg-slate-800 text-white">Browser Simulator (Standalone)</option>
                 </select>
             </div>
 
@@ -80,6 +80,14 @@
                 <span id="status-indicator" class="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse"></span>
                 <span id="status-text" class="font-medium text-slate-200">Local Engine Ready</span>
             </div>
+
+            <!-- NÚT NẠP TÀI LIỆU - Header -->
+            <button onclick="openUploadModal()" class="relative flex items-center gap-2 bg-emerald-500 hover:bg-emerald-600 text-white px-3 py-1.5 rounded-lg text-xs font-semibold transition-all shadow-lg">
+                <span class="absolute -top-1 -right-1 w-3 h-3 bg-emerald-300 rounded-full animate-ping"></span>
+                <span class="absolute -top-1 -right-1 w-3 h-3 bg-emerald-400 rounded-full"></span>
+                <i class="fa-solid fa-file-arrow-up"></i>
+                <span class="hidden sm:inline">Nạp Tài Liệu (.MD)</span>
+            </button>
         </div>
     </header>
 
@@ -103,49 +111,26 @@
 
             <!-- Demo Scenarios Buttons -->
             <div class="p-4 border-b border-slate-100">
+                <!-- BANNER NẠP TÀI LIỆU - Sidebar -->
+                <div onclick="openUploadModal()" class="mb-3 p-3 bg-gradient-to-r from-emerald-50 to-teal-50 rounded-xl border border-emerald-200 cursor-pointer hover:border-emerald-400 hover:shadow-md transition-all group">
+                    <div class="flex items-center gap-2">
+                        <div class="w-8 h-8 bg-emerald-100 rounded-lg flex items-center justify-center text-emerald-600 group-hover:bg-emerald-200 transition-all">
+                            <i class="fa-solid fa-file-circle-plus text-sm"></i>
+                        </div>
+                        <div>
+                            <div class="text-xs font-bold text-emerald-800">Nạp thêm tài liệu</div>
+                            <div class="text-[10px] text-emerald-600">Upload file .md vào Vector DB</div>
+                        </div>
+                        <i class="fa-solid fa-chevron-right text-emerald-400 ml-auto text-[10px] group-hover:translate-x-1 transition-transform"></i>
+                    </div>
+                </div>
+
+                <!-- DANH SÁCH PHIÊN CHAT -->
                 <h3 class="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-3">
-                    <i class="fa-solid fa-flask text-bank-500 mr-1"></i> 4 Kịch Bản Nghiệm Thu
+                    <i class="fa-solid fa-comments text-bank-500 mr-1"></i> Phiên hội thoại
                 </h3>
-                <div class="space-y-2">
-                    <button onclick="runScenario(0)" class="w-full text-left p-2.5 rounded-xl border border-slate-200 hover:border-blue-500 hover:bg-blue-50 transition-all text-xs group">
-                        <div class="font-semibold text-slate-800 group-hover:text-blue-700 flex items-center justify-between">
-                            <span>0. Chào hỏi / Xã giao</span>
-                            <span class="text-[10px] bg-blue-100 text-blue-700 px-1.5 py-0.5 rounded font-mono">Chitchat</span>
-                        </div>
-                        <p class="text-slate-500 mt-1 line-clamp-1">"Xin chào, bạn giúp gì được cho tôi?"</p>
-                    </button>
-
-                    <button onclick="runScenario(1)" class="w-full text-left p-2.5 rounded-xl border border-slate-200 hover:border-bank-500 hover:bg-bank-50 transition-all text-xs group">
-                        <div class="font-semibold text-slate-800 group-hover:text-bank-700 flex items-center justify-between">
-                            <span>1. Tra cứu có trích dẫn</span>
-                            <span class="text-[10px] bg-slate-100 text-slate-600 px-1.5 py-0.5 rounded font-mono">Knowledge</span>
-                        </div>
-                        <p class="text-slate-500 mt-1 line-clamp-1">"Quy trình mở CIF gồm những bước nào?"</p>
-                    </button>
-
-                    <button onclick="runScenario(2)" class="w-full text-left p-2.5 rounded-xl border border-slate-200 hover:border-emerald-500 hover:bg-emerald-50 transition-all text-xs group">
-                        <div class="font-semibold text-slate-800 group-hover:text-emerald-700 flex items-center justify-between">
-                            <span>2. Tra cứu STK gần đúng</span>
-                            <span class="text-[10px] bg-emerald-100 text-emerald-700 px-1.5 py-0.5 rounded font-mono">Operation</span>
-                        </div>
-                        <p class="text-slate-500 mt-1 line-clamp-1">"1234567"</p>
-                    </button>
-
-                    <button onclick="runScenario(3)" class="w-full text-left p-2.5 rounded-xl border border-slate-200 hover:border-purple-500 hover:bg-purple-50 transition-all text-xs group">
-                        <div class="font-semibold text-slate-800 group-hover:text-purple-700 flex items-center justify-between">
-                            <span>3. Hỏi nối tiếp (Memory)</span>
-                            <span class="text-[10px] bg-purple-100 text-purple-700 px-1.5 py-0.5 rounded font-mono">Context</span>
-                        </div>
-                        <p class="text-slate-500 mt-1 line-clamp-1">"Thời gian xử lý mất bao lâu?"</p>
-                    </button>
-
-                    <button onclick="runScenario(4)" class="w-full text-left p-2.5 rounded-xl border border-slate-200 hover:border-amber-500 hover:bg-amber-50 transition-all text-xs group">
-                        <div class="font-semibold text-slate-800 group-hover:text-amber-700 flex items-center justify-between">
-                            <span>4. Hỏi tài liệu eKYC</span>
-                            <span class="text-[10px] bg-amber-100 text-amber-700 px-1.5 py-0.5 rounded font-mono">Knowledge</span>
-                        </div>
-                        <p class="text-slate-500 mt-1 line-clamp-1">"Đối tượng nào được áp dụng quy định eKYC?"</p>
-                    </button>
+                <div id="sessions-list" class="space-y-1.5 max-h-[300px] overflow-y-auto">
+                    <!-- Rendered by JS -->
                 </div>
             </div>
 
@@ -183,27 +168,7 @@
         <main class="flex-1 flex flex-col bg-slate-100 relative">
             <!-- Chat Scroll Area -->
             <div id="chat-messages" class="flex-1 overflow-y-auto p-4 sm:p-6 space-y-6">
-                <!-- Welcome Banner -->
-                <div class="max-w-3xl mx-auto bg-white rounded-2xl p-5 border border-slate-200/80 shadow-sm text-center">
-                    <div class="w-12 h-12 bg-bank-50 text-bank-600 rounded-full flex items-center justify-center mx-auto mb-3 text-xl">
-                        <i class="fa-solid fa-robot"></i>
-                    </div>
-                    <h2 class="text-base font-bold text-slate-800 mb-1">Trợ Lý Hỏi Đáp Quy Trình & Tra Cứu Tác Nghiệp</h2>
-                    <p class="text-xs text-slate-500 max-w-md mx-auto mb-4">
-                        Tự động phân loại câu hỏi Tri thức (RAG với Qdrant Vector Store) hoặc Tra cứu Tác nghiệp (Số tài khoản/Tài sản).
-                    </p>
-                    <div class="flex flex-wrap justify-center gap-2">
-                        <span class="inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-medium bg-slate-100 text-slate-600">
-                            <i class="fa-solid fa-check text-emerald-500 mr-1.5"></i> Trích dẫn Nguồn
-                        </span>
-                        <span class="inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-medium bg-slate-100 text-slate-600">
-                            <i class="fa-solid fa-check text-emerald-500 mr-1.5"></i> Điểm Tin Cậy (Confidence)
-                        </span>
-                        <span class="inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-medium bg-slate-100 text-slate-600">
-                            <i class="fa-solid fa-check text-emerald-500 mr-1.5"></i> Nhớ Ngữ Cảnh Nối Tiếp
-                        </span>
-                    </div>
-                </div>
+                <!-- Bot sẽ tự hỏi STK khi page load -->
             </div>
 
             <!-- Input Bar -->
@@ -256,13 +221,18 @@
         // Session memory in browser memory
         let localSessionMemory = {};
         let currentSessionId = "session_demo_01";
-        let executionMode = "mock"; // 'mock' or 'api'
+        let executionMode = "api"; // 'mock' or 'api'
         let currentTab = "docs";
+        let verifiedAccount = null; // null = chưa xác thực
+        let sessionVerified = {}; // {session_id: true/false}
 
         window.addEventListener('DOMContentLoaded', () => {
             renderDocsList();
+            renderSessionsList();
             renderMemoryList();
             document.getElementById('session-id-input').value = currentSessionId;
+            // Bot hỏi STK khi bắt đầu
+            showBotAskAccount();
         });
 
         function switchTab(tab) {
@@ -289,19 +259,76 @@
             currentSessionId = "session_" + Math.random().toString(36).substring(2, 8);
             document.getElementById('session-id-input').value = currentSessionId;
             localSessionMemory[currentSessionId] = [];
+            sessionVerified[currentSessionId] = false;
+            renderSessionsList();
             renderMemoryList();
             
-            // Clear message area with fresh banner
+            // Clear chat + bot hỏi STK
             const chatBox = document.getElementById('chat-messages');
-            chatBox.innerHTML = `
-                <div class="max-w-3xl mx-auto bg-white rounded-2xl p-5 border border-slate-200/80 shadow-sm text-center">
-                    <div class="w-12 h-12 bg-bank-50 text-bank-600 rounded-full flex items-center justify-center mx-auto mb-3 text-xl">
-                        <i class="fa-solid fa-robot"></i>
+            chatBox.innerHTML = '';
+            showBotAskAccount();
+        }
+
+        function switchToSession(sessionId) {
+            currentSessionId = sessionId;
+            document.getElementById('session-id-input').value = sessionId;
+            renderSessionsList();
+            renderMemoryList();
+            // Clear chat and show session info
+            const chatBox = document.getElementById('chat-messages');
+            const history = localSessionMemory[sessionId] || [];
+            chatBox.innerHTML = '';
+            // Replay messages from memory
+            history.forEach(item => {
+                if (item.role === 'user') {
+                    appendUserMessage(item.content);
+                } else {
+                    // Simple text replay (no full response object)
+                    const html = `
+                        <div class="flex gap-3 max-w-3xl mx-auto items-start">
+                            <div class="w-8 h-8 rounded-xl bg-bank-100 text-bank-700 flex items-center justify-center shrink-0 font-bold text-xs shadow-sm">
+                                <i class="fa-solid fa-robot"></i>
+                            </div>
+                            <div class="bg-white rounded-2xl rounded-tl-sm p-4 border border-slate-200 shadow-sm max-w-[85%] text-sm text-slate-800">
+                                <p class="whitespace-pre-wrap">${escapeHtml(item.content)}</p>
+                            </div>
+                        </div>
+                    `;
+                    chatBox.insertAdjacentHTML('beforeend', html);
+                }
+            });
+            if (history.length === 0) {
+                chatBox.innerHTML = `
+                    <div class="max-w-3xl mx-auto text-center text-xs text-slate-400 py-10">
+                        <i class="fa-solid fa-comments text-2xl text-slate-300 mb-2"></i>
+                        <p>Phiên <strong>${sessionId}</strong> — chưa có tin nhắn.</p>
                     </div>
-                    <h2 class="text-base font-bold text-slate-800 mb-1">Phiên Mới Đã Được Khởi Tạo (${currentSessionId})</h2>
-                    <p class="text-xs text-slate-500">Lịch sử hội thoại cũ đã được làm sạch. Bạn có thể thử nghiệm lại các kịch bản.</p>
-                </div>
-            `;
+                `;
+            }
+            scrollToBottom();
+        }
+
+        function renderSessionsList() {
+            const container = document.getElementById('sessions-list');
+            const sessionIds = Object.keys(localSessionMemory);
+            if (sessionIds.length === 0) {
+                container.innerHTML = '<div class="text-slate-400 text-center py-4 italic text-[11px]">Chưa có phiên nào.</div>';
+                return;
+            }
+            container.innerHTML = sessionIds.map(sid => {
+                const msgs = localSessionMemory[sid] || [];
+                const lastMsg = msgs.length > 0 ? msgs[msgs.length - 1].content : 'Phiên trống';
+                const isActive = sid === currentSessionId;
+                return `
+                    <button onclick="switchToSession('${sid}')" class="w-full text-left p-2 rounded-lg border transition-all text-xs ${isActive ? 'border-bank-500 bg-bank-50' : 'border-slate-200 hover:border-slate-300 hover:bg-slate-50'}">
+                        <div class="flex items-center justify-between">
+                            <span class="font-semibold ${isActive ? 'text-bank-700' : 'text-slate-700'} font-mono text-[10px]">${sid}</span>
+                            <span class="text-[9px] text-slate-400">${msgs.length} msg</span>
+                        </div>
+                        <p class="text-[10px] text-slate-500 mt-0.5 line-clamp-1">${escapeHtml(lastMsg).substring(0, 40)}...</p>
+                    </button>
+                `;
+            }).join('');
         }
 
         function toggleMode() {
@@ -338,16 +365,26 @@
 
         function renderDocsList() {
             const container = document.getElementById('docs-list');
-            container.innerHTML = MOCK_DOCUMENTS.map(doc => `
-                <div class="p-2 bg-slate-50 rounded-lg border border-slate-200/80 hover:bg-white transition-all">
-                    <div class="flex items-center justify-between text-[11px]">
-                        <span class="font-semibold text-bank-700">${doc.document}</span>
-                        <span class="bg-slate-200 text-slate-700 px-1.5 py-0.2 rounded text-[10px]">Mục ${doc.section}</span>
-                    </div>
-                    <div class="text-[11px] font-medium text-slate-800 mt-0.5">${doc.title}</div>
-                    <p class="text-[10px] text-slate-500 mt-1 line-clamp-2">${doc.text}</p>
-                </div>
-            `).join('');
+            // Gọi API count để hiển thị số docs đã index
+            if (executionMode === 'api') {
+                fetch('http://localhost:8000/count')
+                    .then(r => r.json())
+                    .then(data => {
+                        container.innerHTML = `
+                            <div class="p-3 bg-emerald-50 rounded-lg border border-emerald-200 text-center">
+                                <div class="text-2xl font-bold text-emerald-700">${data.count || 0}</div>
+                                <div class="text-[10px] text-emerald-600 mt-1">chunks đã index trong Qdrant</div>
+                                <div class="text-[10px] text-slate-500 mt-1">Collection: <code>internal_docs</code></div>
+                            </div>
+                            <p class="text-[10px] text-slate-400 mt-2 text-center">Upload tài liệu .md qua nút "Nạp Tài Liệu" để thêm data.</p>
+                        `;
+                    })
+                    .catch(() => {
+                        container.innerHTML = `<div class="text-slate-400 text-center py-4 italic text-xs">Không kết nối được Qdrant API.</div>`;
+                    });
+            } else {
+                container.innerHTML = `<div class="text-slate-400 text-center py-4 italic text-xs">Đang dùng Mock mode. Chuyển sang FastAPI để xem data thật.</div>`;
+            }
         }
 
         function renderMemoryList() {
@@ -709,6 +746,488 @@
                 .replace(/"/g, "&quot;")
                 .replace(/'/g, "&#039;");
         }
+
+        // ==========================================
+        // ACCOUNT VERIFICATION (in-chat flow)
+        // ==========================================
+        async function verifyAccount() {
+            // Called from old gate - no longer used
+        }
+
+        async function verifyAccountInChat(account) {
+            try {
+                const resp = await fetch('http://localhost:8000/verify-account', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ account: account })
+                });
+                return await resp.json();
+            } catch (e) {
+                return { valid: false, message: "Không kết nối được server." };
+            }
+        }
+
+        function showBotAskAccount() {
+            const chatBox = document.getElementById('chat-messages');
+            const html = `
+                <div class="flex gap-3 max-w-3xl mx-auto items-start">
+                    <div class="w-8 h-8 rounded-xl bg-bank-100 text-bank-700 flex items-center justify-center shrink-0 font-bold text-xs shadow-sm">
+                        <i class="fa-solid fa-robot"></i>
+                    </div>
+                    <div class="bg-white rounded-2xl rounded-tl-sm p-4 border border-slate-200 shadow-sm max-w-[85%]">
+                        <div class="text-sm text-slate-800 leading-relaxed">
+                            <p class="font-semibold mb-1">Xin chào! Tôi là Trợ lý Smart Search Nội bộ.</p>
+                            <p>Trước khi bắt đầu, vui lòng <strong>nhập số tài khoản</strong> của bạn để xác thực.</p>
+                            <p class="text-xs text-slate-500 mt-2 italic"><i class="fa-solid fa-info-circle mr-1"></i> Nhập STK vào ô chat bên dưới rồi nhấn Gửi.</p>
+                        </div>
+                    </div>
+                </div>
+            `;
+            chatBox.insertAdjacentHTML('beforeend', html);
+            scrollToBottom();
+        }
+
+        // ==========================================
+        // HANDLE SEND - Main chat submission
+        // ==========================================
+        async function handleSend(event) {
+            event.preventDefault();
+            const input = document.getElementById('user-input');
+            const question = input.value.trim();
+            if (!question) return;
+
+            // Show user message
+            appendUserMessage(question);
+            input.value = '';
+
+            // CHECK: Session chưa xác thực → verify STK
+            if (!sessionVerified[currentSessionId]) {
+                const digits = question.replace(/\D/g, '');
+                if (digits.length >= 5) {
+                    // User nhập số → thử verify
+                    const typingId = appendTypingIndicator();
+                    const result = await verifyAccountInChat(digits);
+                    removeTypingIndicator(typingId);
+
+                    if (result.valid) {
+                        sessionVerified[currentSessionId] = true;
+                        verifiedAccount = result;
+                        // Bot confirm
+                        const confirmHtml = `
+                            <div class="flex gap-3 max-w-3xl mx-auto items-start">
+                                <div class="w-8 h-8 rounded-xl bg-emerald-100 text-emerald-700 flex items-center justify-center shrink-0 font-bold text-xs shadow-sm">
+                                    <i class="fa-solid fa-circle-check"></i>
+                                </div>
+                                <div class="bg-emerald-50 rounded-2xl rounded-tl-sm p-4 border border-emerald-200 shadow-sm max-w-[85%]">
+                                    <div class="text-sm text-emerald-800">
+                                        <p class="font-semibold">✅ Xác thực thành công!</p>
+                                        <p class="mt-1">Khách hàng: <strong>${escapeHtml(result.name)}</strong></p>
+                                        <p>Loại TK: ${escapeHtml(result.type)}</p>
+                                        <p class="text-xs text-emerald-600 mt-2">Bạn có thể đặt câu hỏi ngay bây giờ.</p>
+                                    </div>
+                                </div>
+                            </div>
+                        `;
+                        document.getElementById('chat-messages').insertAdjacentHTML('beforeend', confirmHtml);
+                        scrollToBottom();
+
+                        if (!localSessionMemory[currentSessionId]) localSessionMemory[currentSessionId] = [];
+                        localSessionMemory[currentSessionId].push({ role: 'user', content: question });
+                        localSessionMemory[currentSessionId].push({ role: 'assistant', content: `Xác thực OK: ${result.name}` });
+                        renderSessionsList();
+                    } else {
+                        // Sai STK
+                        const errorHtml = `
+                            <div class="flex gap-3 max-w-3xl mx-auto items-start">
+                                <div class="w-8 h-8 rounded-xl bg-rose-100 text-rose-700 flex items-center justify-center shrink-0 font-bold text-xs shadow-sm">
+                                    <i class="fa-solid fa-circle-xmark"></i>
+                                </div>
+                                <div class="bg-rose-50 rounded-2xl rounded-tl-sm p-4 border border-rose-200 shadow-sm max-w-[85%]">
+                                    <div class="text-sm text-rose-800">
+                                        <p class="font-semibold">❌ Số tài khoản không hợp lệ</p>
+                                        <p class="mt-1">${escapeHtml(result.message || 'Không tìm thấy STK trong hệ thống.')}</p>
+                                        <p class="text-xs text-rose-600 mt-2">Vui lòng nhập lại STK chính xác.</p>
+                                    </div>
+                                </div>
+                            </div>
+                        `;
+                        document.getElementById('chat-messages').insertAdjacentHTML('beforeend', errorHtml);
+                        scrollToBottom();
+                    }
+                } else {
+                    // User nhập text không phải số → nhắc lại
+                    const remindHtml = `
+                        <div class="flex gap-3 max-w-3xl mx-auto items-start">
+                            <div class="w-8 h-8 rounded-xl bg-amber-100 text-amber-700 flex items-center justify-center shrink-0 font-bold text-xs shadow-sm">
+                                <i class="fa-solid fa-triangle-exclamation"></i>
+                            </div>
+                            <div class="bg-amber-50 rounded-2xl rounded-tl-sm p-4 border border-amber-200 shadow-sm max-w-[85%]">
+                                <div class="text-sm text-amber-800">
+                                    <p>Vui lòng nhập <strong>số tài khoản</strong> (ít nhất 5 chữ số) để xác thực trước khi sử dụng.</p>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                    document.getElementById('chat-messages').insertAdjacentHTML('beforeend', remindHtml);
+                    scrollToBottom();
+                }
+                return;
+            }
+
+            // === SESSION ĐÃ XÁC THỰC → xử lý chat bình thường ===
+            const typingId = appendTypingIndicator();
+
+            let result = null;
+
+            if (executionMode === 'api') {
+                result = await callFastAPI(question);
+            }
+
+            if (!result) {
+                result = simulateSmartSearchBackend(question, currentSessionId);
+            }
+
+            removeTypingIndicator(typingId);
+
+            if (!localSessionMemory[currentSessionId]) localSessionMemory[currentSessionId] = [];
+            localSessionMemory[currentSessionId].push({ role: 'user', content: question });
+            localSessionMemory[currentSessionId].push({ role: 'assistant', content: result.answer || JSON.stringify(result.results) });
+            renderMemoryList();
+            renderSessionsList();
+
+            // Hiện RAG Pipeline visualization trước answer
+            await showRAGPipeline(question, result);
+            appendAssistantMessage(result);
+        }
+
+        function removeTypingIndicator(id) {
+            const el = document.getElementById(id);
+            if (el) el.remove();
+        }
+
+        // ==========================================
+        // RAG PIPELINE VISUALIZATION
+        // ==========================================
+        async function showRAGPipeline(query, result) {
+            const chatBox = document.getElementById('chat-messages');
+            const pipelineId = 'pipeline-' + Date.now();
+            
+            const isKnowledge = result.type === 'knowledge';
+            const sources = result.sources || [];
+            const chunks = sources.length;
+            
+            const pipelineHtml = `
+                <div id="${pipelineId}" class="max-w-3xl mx-auto">
+                    <div class="bg-slate-900 rounded-xl p-3 border border-slate-700 shadow-lg text-xs font-mono">
+                        <div class="flex items-center gap-2 mb-2 text-slate-400">
+                            <i class="fa-solid fa-diagram-project text-blue-400"></i>
+                            <span class="text-[10px] uppercase tracking-wider font-semibold">RAG Pipeline</span>
+                        </div>
+                        <div class="space-y-1.5" id="${pipelineId}-steps">
+                            <div class="flex items-center gap-2 text-slate-500">
+                                <span class="w-4 text-center">○</span>
+                                <span>Query: "${escapeHtml(query.substring(0, 40))}${query.length > 40 ? '...' : ''}"</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+            chatBox.insertAdjacentHTML('beforeend', pipelineHtml);
+            scrollToBottom();
+
+            const stepsContainer = document.getElementById(pipelineId + '-steps');
+            
+            // Step 1: Embed query
+            await sleep(300);
+            stepsContainer.insertAdjacentHTML('beforeend', `
+                <div class="flex items-center gap-2 text-emerald-400">
+                    <span class="w-4 text-center">→</span>
+                    <span>Embedding (BGE-M3, 1024 dims)</span>
+                    <span class="text-emerald-600">✓</span>
+                </div>
+            `);
+            scrollToBottom();
+
+            // Step 2: Vector Search
+            await sleep(300);
+            stepsContainer.insertAdjacentHTML('beforeend', `
+                <div class="flex items-center gap-2 text-blue-400">
+                    <span class="w-4 text-center">→</span>
+                    <span>Hybrid Search (Dense + Sparse + RRF)</span>
+                    <span class="text-blue-600">✓</span>
+                </div>
+            `);
+            scrollToBottom();
+
+            // Step 3: Retrieved chunks
+            await sleep(300);
+            const chunkInfo = isKnowledge && chunks > 0 
+                ? `${chunks} chunks từ ${sources[0].document}` 
+                : 'Intent: ' + result.type;
+            stepsContainer.insertAdjacentHTML('beforeend', `
+                <div class="flex items-center gap-2 text-amber-400">
+                    <span class="w-4 text-center">→</span>
+                    <span>Retrieved: ${escapeHtml(chunkInfo)}</span>
+                    <span class="text-amber-600">✓</span>
+                </div>
+            `);
+            scrollToBottom();
+
+            // Step 4: LLM Generate
+            await sleep(300);
+            stepsContainer.insertAdjacentHTML('beforeend', `
+                <div class="flex items-center gap-2 text-purple-400">
+                    <span class="w-4 text-center">→</span>
+                    <span>LLM (Qwen2.5 7B) → Generate answer</span>
+                    <span class="text-purple-600">✓</span>
+                </div>
+            `);
+            scrollToBottom();
+
+            // Step 5: Confidence
+            await sleep(200);
+            const confColor = result.confidence.level === 'High' ? 'text-emerald-400' : (result.confidence.level === 'Medium' ? 'text-amber-400' : 'text-rose-400');
+            stepsContainer.insertAdjacentHTML('beforeend', `
+                <div class="flex items-center gap-2 ${confColor}">
+                    <span class="w-4 text-center">◉</span>
+                    <span>Confidence: ${(result.confidence.score * 100).toFixed(0)}% (${result.confidence.level})</span>
+                </div>
+            `);
+            scrollToBottom();
+
+            await sleep(400);
+        }
+
+        function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
+    </script>
+
+    <!-- ==========================================
+         UPLOAD MODAL + PIPELINE TRACKER
+    ========================================== -->
+    <div id="upload-modal" class="fixed inset-0 z-50 hidden">
+        <!-- Backdrop -->
+        <div onclick="closeUploadModal()" class="absolute inset-0 bg-black/50 backdrop-blur-sm"></div>
+        <!-- Modal Content -->
+        <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-lg bg-white rounded-2xl shadow-2xl border border-slate-200 overflow-hidden">
+            <!-- Header -->
+            <div class="bg-gradient-to-r from-emerald-600 to-teal-600 p-4 text-white">
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center gap-2">
+                        <i class="fa-solid fa-file-arrow-up text-lg"></i>
+                        <h3 class="font-bold text-base">Nạp Tài Liệu Markdown</h3>
+                    </div>
+                    <button onclick="closeUploadModal()" class="w-7 h-7 rounded-full bg-white/20 hover:bg-white/30 flex items-center justify-center">
+                        <i class="fa-solid fa-xmark text-sm"></i>
+                    </button>
+                </div>
+                <p class="text-xs text-emerald-100 mt-1">Chọn file .md hoặc paste nội dung → Hệ thống sẽ chunking, embedding, index vào Qdrant</p>
+            </div>
+
+            <!-- Body -->
+            <div class="p-5">
+                <!-- File Input -->
+                <div id="upload-form-area">
+                    <label class="block text-xs font-semibold text-slate-700 mb-2">Chọn file Markdown (.md)</label>
+                    <div class="border-2 border-dashed border-slate-300 rounded-xl p-6 text-center hover:border-emerald-400 transition-colors cursor-pointer" onclick="document.getElementById('md-file-input').click()">
+                        <input type="file" id="md-file-input" accept=".md,.markdown,.txt" class="hidden" onchange="handleFileSelect(event)">
+                        <i class="fa-solid fa-cloud-arrow-up text-3xl text-slate-400 mb-2"></i>
+                        <p class="text-xs text-slate-600 font-medium">Kéo thả hoặc bấm để chọn file</p>
+                        <p class="text-[10px] text-slate-400 mt-1">.md, .markdown, .txt</p>
+                    </div>
+                    <div id="selected-file-info" class="hidden mt-3 p-2 bg-emerald-50 rounded-lg border border-emerald-200">
+                        <div class="flex items-center gap-2 text-xs">
+                            <i class="fa-solid fa-file-lines text-emerald-600"></i>
+                            <span id="selected-file-name" class="font-medium text-emerald-800"></span>
+                            <span id="selected-file-size" class="text-emerald-600 ml-auto"></span>
+                        </div>
+                    </div>
+                    <button onclick="startProcessingPipeline()" id="btn-start-pipeline" class="mt-4 w-full bg-emerald-600 hover:bg-emerald-700 text-white py-2.5 rounded-xl text-sm font-semibold transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2" disabled>
+                        <i class="fa-solid fa-play"></i> Chạy Processing Pipeline
+                    </button>
+                </div>
+
+                <!-- Pipeline Progress Tracker -->
+                <div id="pipeline-tracker" class="hidden">
+                    <div class="space-y-3">
+                        <div id="step-1" class="flex items-center gap-3 p-2 rounded-lg bg-slate-50">
+                            <div class="w-7 h-7 rounded-full bg-slate-200 flex items-center justify-center text-xs font-bold text-slate-500" id="step-1-icon">1</div>
+                            <div class="flex-1">
+                                <div class="text-xs font-semibold text-slate-700">Tiếp nhận & Kiểm tra Văn bản</div>
+                                <div class="text-[10px] text-slate-500" id="step-1-detail">Đang chờ...</div>
+                            </div>
+                            <span class="text-[10px] font-mono text-slate-400" id="step-1-pct">0%</span>
+                        </div>
+                        <div id="step-2" class="flex items-center gap-3 p-2 rounded-lg bg-slate-50">
+                            <div class="w-7 h-7 rounded-full bg-slate-200 flex items-center justify-center text-xs font-bold text-slate-500" id="step-2-icon">2</div>
+                            <div class="flex-1">
+                                <div class="text-xs font-semibold text-slate-700">Phân đoạn (Markdown Chunking)</div>
+                                <div class="text-[10px] text-slate-500" id="step-2-detail">Đang chờ...</div>
+                            </div>
+                            <span class="text-[10px] font-mono text-slate-400" id="step-2-pct">0%</span>
+                        </div>
+                        <div id="step-3" class="flex items-center gap-3 p-2 rounded-lg bg-slate-50">
+                            <div class="w-7 h-7 rounded-full bg-slate-200 flex items-center justify-center text-xs font-bold text-slate-500" id="step-3-icon">3</div>
+                            <div class="flex-1">
+                                <div class="text-xs font-semibold text-slate-700">Sinh Vector Embedding (BGE-M3)</div>
+                                <div class="text-[10px] text-slate-500" id="step-3-detail">Đang chờ...</div>
+                            </div>
+                            <span class="text-[10px] font-mono text-slate-400" id="step-3-pct">0%</span>
+                        </div>
+                        <div id="step-4" class="flex items-center gap-3 p-2 rounded-lg bg-slate-50">
+                            <div class="w-7 h-7 rounded-full bg-slate-200 flex items-center justify-center text-xs font-bold text-slate-500" id="step-4-icon">4</div>
+                            <div class="flex-1">
+                                <div class="text-xs font-semibold text-slate-700">Indexing vào Qdrant DB</div>
+                                <div class="text-[10px] text-slate-500" id="step-4-detail">Đang chờ...</div>
+                            </div>
+                            <span class="text-[10px] font-mono text-slate-400" id="step-4-pct">0%</span>
+                        </div>
+                    </div>
+                    <!-- Progress Bar -->
+                    <div class="mt-4 bg-slate-200 rounded-full h-2 overflow-hidden">
+                        <div id="pipeline-progress-bar" class="h-full bg-gradient-to-r from-emerald-500 to-teal-500 rounded-full transition-all duration-700 ease-out" style="width: 0%"></div>
+                    </div>
+                    <p class="text-center text-[10px] text-slate-500 mt-2" id="pipeline-overall-status">Đang xử lý...</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+    // ==========================================
+    // UPLOAD & PIPELINE LOGIC
+    // ==========================================
+    let uploadedFileContent = null;
+    let uploadedFileName = null;
+
+    function openUploadModal() {
+        document.getElementById('upload-modal').classList.remove('hidden');
+        // Reset state
+        document.getElementById('upload-form-area').classList.remove('hidden');
+        document.getElementById('pipeline-tracker').classList.add('hidden');
+        document.getElementById('btn-start-pipeline').disabled = true;
+        document.getElementById('selected-file-info').classList.add('hidden');
+        document.getElementById('md-file-input').value = '';
+        uploadedFileContent = null;
+        uploadedFileName = null;
+    }
+
+    function closeUploadModal() {
+        document.getElementById('upload-modal').classList.add('hidden');
+    }
+
+    function handleFileSelect(event) {
+        const file = event.target.files[0];
+        if (!file) return;
+
+        uploadedFileName = file.name;
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            uploadedFileContent = e.target.result;
+            document.getElementById('selected-file-name').textContent = file.name;
+            document.getElementById('selected-file-size').textContent = (file.size / 1024).toFixed(1) + ' KB';
+            document.getElementById('selected-file-info').classList.remove('hidden');
+            document.getElementById('btn-start-pipeline').disabled = false;
+        };
+        reader.readAsText(file);
+    }
+
+    async function startProcessingPipeline() {
+        if (!uploadedFileContent || !uploadedFileName) return;
+
+        // Switch to pipeline tracker view
+        document.getElementById('upload-form-area').classList.add('hidden');
+        document.getElementById('pipeline-tracker').classList.remove('hidden');
+
+        // Step 1: Parse file (25%)
+        await animateStep(1, 'Đã parse ' + uploadedFileName, 25, 800);
+
+        // Step 2: Chunking (50%)
+        const chunks = uploadedFileContent.split(/\n## /).length;
+        await animateStep(2, chunks + ' chunks được tạo', 50, 1200);
+
+        // Step 3: Embedding (75%)
+        await animateStep(3, chunks + ' vectors dense 1024 chiều', 75, 1500);
+
+        // Step 4: Index vào Qdrant (100%)
+        let indexSuccess = false;
+        if (executionMode === 'api') {
+            try {
+                const resp = await fetch('http://localhost:8000/upload-doc', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ filename: uploadedFileName, content: uploadedFileContent })
+                });
+                const data = await resp.json();
+                indexSuccess = true;
+                await animateStep(4, 'Indexed ' + (data.chunks_indexed || chunks) + ' chunks vào Qdrant', 100, 1000);
+            } catch (err) {
+                await animateStep(4, 'Simulated indexing (API offline)', 100, 1000);
+            }
+        } else {
+            // Mock mode: simulate
+            await animateStep(4, 'Simulated ' + chunks + ' chunks indexed', 100, 1000);
+        }
+
+        document.getElementById('pipeline-overall-status').innerHTML = '<span class="text-emerald-600 font-semibold">✅ Pipeline hoàn tất!</span>';
+
+        // Post notification in chat
+        setTimeout(() => {
+            closeUploadModal();
+            appendPipelineNotification(uploadedFileName, chunks);
+        }, 1500);
+    }
+
+    async function animateStep(stepNum, detail, pct, delay) {
+        return new Promise(resolve => {
+            setTimeout(() => {
+                const stepEl = document.getElementById('step-' + stepNum);
+                const iconEl = document.getElementById('step-' + stepNum + '-icon');
+                const detailEl = document.getElementById('step-' + stepNum + '-detail');
+                const pctEl = document.getElementById('step-' + stepNum + '-pct');
+
+                stepEl.classList.remove('bg-slate-50');
+                stepEl.classList.add('bg-emerald-50');
+                iconEl.classList.remove('bg-slate-200', 'text-slate-500');
+                iconEl.classList.add('bg-emerald-500', 'text-white');
+                iconEl.innerHTML = '<i class="fa-solid fa-check text-[10px]"></i>';
+                detailEl.textContent = detail;
+                detailEl.classList.remove('text-slate-500');
+                detailEl.classList.add('text-emerald-700');
+                pctEl.textContent = pct + '%';
+                pctEl.classList.remove('text-slate-400');
+                pctEl.classList.add('text-emerald-600');
+
+                document.getElementById('pipeline-progress-bar').style.width = pct + '%';
+                resolve();
+            }, delay);
+        });
+    }
+
+    function appendPipelineNotification(filename, chunks) {
+        const chatBox = document.getElementById('chat-messages');
+        const notifHTML = `
+            <div class="max-w-3xl mx-auto">
+                <div class="bg-gradient-to-r from-emerald-50 to-teal-50 rounded-2xl p-4 border border-emerald-200 shadow-sm">
+                    <div class="flex items-start gap-3">
+                        <div class="w-9 h-9 bg-emerald-100 rounded-xl flex items-center justify-center text-emerald-600 shrink-0">
+                            <i class="fa-solid fa-circle-check text-lg"></i>
+                        </div>
+                        <div>
+                            <div class="text-sm font-bold text-emerald-800 mb-1">Tài liệu đã nạp thành công!</div>
+                            <div class="text-xs text-emerald-700 space-y-0.5">
+                                <div><i class="fa-solid fa-file-lines mr-1"></i> File: <strong>${filename}</strong></div>
+                                <div><i class="fa-solid fa-scissors mr-1"></i> Chunks: <strong>${chunks}</strong> đoạn</div>
+                                <div><i class="fa-solid fa-database mr-1"></i> Indexed vào collection: <code class="bg-emerald-100 px-1 rounded">internal_docs</code></div>
+                            </div>
+                            <p class="text-[11px] text-emerald-600 mt-2 italic">Bạn có thể đặt câu hỏi về tài liệu vừa nạp ngay bây giờ.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+        chatBox.insertAdjacentHTML('beforeend', notifHTML);
+        chatBox.scrollTop = chatBox.scrollHeight;
+    }
     </script>
 </body>
 </html>

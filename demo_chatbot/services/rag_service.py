@@ -13,7 +13,8 @@ from typing import List, Tuple
 
 from qdrant_client import QdrantClient
 from qdrant_client.models import SparseVector, Prefetch, FusionQuery, Fusion
-from fastembed import TextEmbedding, SparseTextEmbedding
+from fastembed import SparseTextEmbedding
+from sentence_transformers import SentenceTransformer
 from langchain_core.messages import BaseMessage
 from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
 
@@ -26,7 +27,7 @@ from models import SourceItem, ConfidenceInfo
 
 # === Lazy-loaded globals ===
 _client: QdrantClient = None
-_dense_model: TextEmbedding = None
+_dense_model: SentenceTransformer = None
 _sparse_model: SparseTextEmbedding = None
 _llm = None
 
@@ -38,10 +39,10 @@ def _get_client() -> QdrantClient:
     return _client
 
 
-def _get_dense_model() -> TextEmbedding:
+def _get_dense_model() -> SentenceTransformer:
     global _dense_model
     if _dense_model is None:
-        _dense_model = TextEmbedding(model_name=DENSE_MODEL_NAME)
+        _dense_model = SentenceTransformer(DENSE_MODEL_NAME)
     return _dense_model
 
 
@@ -103,7 +104,7 @@ def retrieve_and_answer(
     llm = _get_llm()
 
     # 1. Embed query
-    query_dense = list(dense_model.embed([question]))[0].tolist()
+    query_dense = dense_model.encode([question], normalize_embeddings=True)[0].tolist()
     query_sparse_raw = list(sparse_model.embed([question]))[0]
     query_sparse = SparseVector(
         indices=query_sparse_raw.indices.tolist(),
