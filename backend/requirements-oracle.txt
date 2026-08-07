@@ -1,0 +1,2 @@
+-r requirements.txt
+oracledb>=1.4.0

@@ -1,0 +1,573 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Admin RBAC Dashboard</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: 'Segoe UI', Tahoma, sans-serif; background: #f0f2f5; color: #333; }
+.login-container { display: flex; justify-content: center; align-items: center; min-height: 100vh; }
+.login-box { background: #fff; padding: 2.5rem; border-radius: 12px; box-shadow: 0 4px 24px rgba(0,0,0,0.10); width: 380px; }
+.login-box h1 { text-align: center; margin-bottom: 1.5rem; color: #1a73e8; font-size: 1.5rem; }
+.login-box input { width: 100%; padding: 0.75rem; margin-bottom: 1rem; border: 1px solid #ddd; border-radius: 6px; font-size: 0.95rem; }
+.login-box button { width: 100%; padding: 0.75rem; background: #1a73e8; color: #fff; border: none; border-radius: 6px; font-size: 1rem; cursor: pointer; }
+.login-box button:hover { background: #1557b0; }
+.login-error { color: #d93025; font-size: 0.85rem; margin-bottom: 0.5rem; text-align: center; }
+
+.dashboard { display: none; }
+.topbar { background: #1a73e8; color: #fff; padding: 0.75rem 1.5rem; display: flex; justify-content: space-between; align-items: center; }
+.topbar h1 { font-size: 1.2rem; font-weight: 600; }
+.topbar .user-info { display: flex; align-items: center; gap: 1rem; }
+.topbar .user-info span { font-size: 0.9rem; opacity: 0.9; }
+.topbar button { background: rgba(255,255,255,0.2); border: none; color: #fff; padding: 0.4rem 0.8rem; border-radius: 4px; cursor: pointer; }
+.topbar button:hover { background: rgba(255,255,255,0.3); }
+
+.layout { display: flex; min-height: calc(100vh - 52px); }
+.sidebar { width: 220px; background: #fff; border-right: 1px solid #e0e0e0; padding: 1rem 0; }
+.sidebar a { display: block; padding: 0.7rem 1.5rem; color: #555; text-decoration: none; font-size: 0.9rem; border-left: 3px solid transparent; }
+.sidebar a:hover, .sidebar a.active { background: #e8f0fe; color: #1a73e8; border-left-color: #1a73e8; }
+</style>
+</head>
+<body>
+<!-- LOGIN -->
+<div class="login-container" id="loginSection">
+<div class="login-box">
+<h1>🔐 Admin RBAC Login</h1>
+<div class="login-error" id="loginError"></div>
+<input type="text" id="loginUser" placeholder="Username" value="admin">
+<input type="password" id="loginPass" placeholder="Password">
+<button onclick="doLogin()">Đăng nhập</button>
+</div>
+</div>
+
+<!-- DASHBOARD -->
+<div class="dashboard" id="dashboard">
+<div class="topbar">
+<h1>🛡️ Admin RBAC Dashboard</h1>
+<div class="user-info">
+<span id="topbarUser"></span>
+<button onclick="doLogout()">Đăng xuất</button>
+</div>
+</div>
+<div class="layout">
+<nav class="sidebar">
+<a href="#" onclick="showTab('users')" id="nav-users" class="active">👥 Users</a>
+<a href="#" onclick="showTab('roles')" id="nav-roles">🎭 Roles</a>
+<a href="#" onclick="showTab('collections')" id="nav-collections">📦 Collections</a>
+<a href="#" onclick="showTab('test')" id="nav-test">🧪 Test Token</a>
+</nav>
+<main class="content" id="mainContent"></main>
+</div>
+</div>
+
+<style>
+.content { flex: 1; padding: 1.5rem; }
+.card { background: #fff; border-radius: 8px; padding: 1.5rem; margin-bottom: 1.5rem; box-shadow: 0 1px 4px rgba(0,0,0,0.06); }
+.card h2 { font-size: 1.1rem; margin-bottom: 1rem; color: #333; }
+.btn { padding: 0.5rem 1rem; border: none; border-radius: 5px; cursor: pointer; font-size: 0.85rem; }
+.btn-primary { background: #1a73e8; color: #fff; }
+.btn-primary:hover { background: #1557b0; }
+.btn-danger { background: #d93025; color: #fff; }
+.btn-danger:hover { background: #a52714; }
+.btn-success { background: #1e8e3e; color: #fff; }
+.btn-success:hover { background: #137333; }
+.btn-secondary { background: #5f6368; color: #fff; }
+.btn-secondary:hover { background: #3c4043; }
+table { width: 100%; border-collapse: collapse; font-size: 0.88rem; }
+th, td { padding: 0.6rem 0.8rem; text-align: left; border-bottom: 1px solid #eee; }
+th { background: #f8f9fa; font-weight: 600; color: #555; }
+tr:hover { background: #f8f9fa; }
+.form-row { display: flex; gap: 0.8rem; margin-bottom: 0.8rem; flex-wrap: wrap; }
+.form-row input, .form-row select { padding: 0.5rem; border: 1px solid #ddd; border-radius: 5px; font-size: 0.88rem; }
+.form-row input[type=text], .form-row input[type=password] { min-width: 160px; }
+.badge { display: inline-block; padding: 0.2rem 0.5rem; border-radius: 3px; font-size: 0.75rem; font-weight: 600; }
+.badge-blue { background: #e8f0fe; color: #1a73e8; }
+.badge-green { background: #e6f4ea; color: #1e8e3e; }
+.badge-orange { background: #fef7e0; color: #e37400; }
+.toast { position: fixed; top: 1rem; right: 1rem; padding: 0.8rem 1.2rem; border-radius: 6px; color: #fff; font-size: 0.9rem; z-index: 9999; animation: fadeIn 0.3s; }
+.toast-success { background: #1e8e3e; }
+.toast-error { background: #d93025; }
+@keyframes fadeIn { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
+.modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.4); z-index: 1000; justify-content: center; align-items: center; }
+.modal-overlay.show { display: flex; }
+.modal { background: #fff; border-radius: 10px; padding: 2rem; min-width: 400px; max-width: 90vw; max-height: 80vh; overflow-y: auto; }
+.modal h3 { margin-bottom: 1rem; }
+.modal .form-row { margin-bottom: 0.6rem; }
+</style>
+
+<!-- Modal: Assign Roles -->
+<div class="modal-overlay" id="modalAssignRoles">
+<div class="modal">
+<h3>Gán Roles cho User: <span id="assignRolesUsername"></span></h3>
+<div id="assignRolesCheckboxes"></div>
+<div class="form-row" style="margin-top:1rem;">
+<button class="btn btn-primary" onclick="submitAssignRoles()">Lưu</button>
+<button class="btn btn-secondary" onclick="closeModal('modalAssignRoles')">Đóng</button>
+</div>
+</div>
+</div>
+
+<!-- Modal: Role Permissions -->
+<div class="modal-overlay" id="modalRolePerms">
+<div class="modal">
+<h3>Sửa Permissions cho Role: <span id="editRoleName"></span></h3>
+<div id="rolePermsEditor"></div>
+<div class="form-row" style="margin-top:0.5rem;">
+<button class="btn btn-success" onclick="addRolePermRow()">+ Thêm</button>
+</div>
+<div class="form-row" style="margin-top:1rem;">
+<button class="btn btn-primary" onclick="submitRolePerms()">Lưu</button>
+<button class="btn btn-secondary" onclick="closeModal('modalRolePerms')">Đóng</button>
+</div>
+</div>
+</div>
+
+<!-- Modal: Collection Info -->
+<div class="modal-overlay" id="modalCollectionInfo">
+<div class="modal">
+<h3>Collection: <span id="collInfoName"></span></h3>
+<pre id="collInfoContent" style="background:#f5f5f5;padding:1rem;border-radius:6px;overflow:auto;max-height:400px;font-size:0.8rem;"></pre>
+<div class="form-row" style="margin-top:1rem;">
+<button class="btn btn-secondary" onclick="closeModal('modalCollectionInfo')">Đóng</button>
+</div>
+</div>
+</div>
+
+<script>
+const BASE = '';
+let TOKEN = '';
+let USERNAME = '';
+let allCollections = [];
+let allRoles = [];
+
+function toast(msg, type='success') {
+  const el = document.createElement('div');
+  el.className = 'toast toast-' + type;
+  el.textContent = msg;
+  document.body.appendChild(el);
+  setTimeout(() => el.remove(), 3000);
+}
+
+function closeModal(id) { document.getElementById(id).classList.remove('show'); }
+
+async function api(method, path, body) {
+  const opts = { method, headers: { 'Content-Type': 'application/json' } };
+  if (TOKEN) opts.headers['Authorization'] = 'Bearer ' + TOKEN;
+  if (body) opts.body = JSON.stringify(body);
+  const res = await fetch(BASE + path, opts);
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(data.detail || `HTTP ${res.status}`);
+  return data;
+}
+
+async function doLogin() {
+  const u = document.getElementById('loginUser').value.trim();
+  const p = document.getElementById('loginPass').value;
+  try {
+    const data = await api('POST', '/admin/login', { username: u, password: p });
+    TOKEN = data.admin_token;
+    USERNAME = data.username;
+    document.getElementById('loginSection').style.display = 'none';
+    document.getElementById('dashboard').style.display = 'block';
+    document.getElementById('topbarUser').textContent = '👤 ' + USERNAME;
+    showTab('users');
+  } catch (e) {
+    document.getElementById('loginError').textContent = e.message;
+  }
+}
+
+function doLogout() {
+  TOKEN = ''; USERNAME = '';
+  document.getElementById('dashboard').style.display = 'none';
+  document.getElementById('loginSection').style.display = 'flex';
+  document.getElementById('loginPass').value = '';
+  document.getElementById('loginError').textContent = '';
+}
+</script>
+
+<script>
+function showTab(tab) {
+  document.querySelectorAll('.sidebar a').forEach(a => a.classList.remove('active'));
+  const nav = document.getElementById('nav-' + tab);
+  if (nav) nav.classList.add('active');
+  if (tab === 'users') renderUsers();
+  else if (tab === 'roles') renderRoles();
+  else if (tab === 'collections') renderCollections();
+  else if (tab === 'test') renderTestToken();
+}
+
+// ======================== USERS ========================
+async function renderUsers() {
+  const mc = document.getElementById('mainContent');
+  mc.innerHTML = '<div class="card"><h2>Đang tải...</h2></div>';
+  try {
+    const data = await api('GET', '/admin/users');
+    const users = data.users || [];
+    let html = `<div class="card"><h2>👥 Quản lý Users (${users.length})</h2>`;
+    html += `<div class="form-row">
+      <input type="text" id="newUsername" placeholder="Username">
+      <input type="password" id="newPassword" placeholder="Password">
+      <button class="btn btn-primary" onclick="createUser()">+ Tạo User</button>
+    </div>`;
+    html += `<table><tr><th>Username</th><th>Type</th><th>Permissions</th><th>Created</th><th>Actions</th></tr>`;
+    for (const u of users) {
+      const perms = (u.permissions || []).map(p => `<span class="badge badge-blue">${p.collection}:${p.access}</span>`).join(' ');
+      html += `<tr>
+        <td><strong>${u.username}</strong></td>
+        <td><span class="badge ${u.user_type==='ADMIN'?'badge-orange':'badge-green'}">${u.user_type}</span></td>
+        <td>${u.user_type!=='ADMIN' ? (perms || '<em>none</em>') : '<em>full access</em>'}</td>
+        <td>${(u.created_at||'').slice(0,16)}</td>
+        <td>
+          ${u.user_type!=='ADMIN'?`<button class="btn btn-primary" onclick="openAssignRoles('${u.username}')">Roles</button>`:''}
+          ${u.user_type!=='ADMIN'?`<button class="btn btn-danger" onclick="deleteUser('${u.username}')">Xóa</button>`:''}
+        </td>
+      </tr>`;
+    }
+    html += `</table></div>`;
+    mc.innerHTML = html;
+  } catch (e) { mc.innerHTML = `<div class="card"><h2>Lỗi: ${e.message}</h2></div>`; }
+}
+
+async function createUser() {
+  const username = document.getElementById('newUsername').value.trim();
+  const password = document.getElementById('newPassword').value;
+  if (!username || !password) return toast('Nhập username và password', 'error');
+  try {
+    await api('POST', '/admin/users', { username, password, permissions: [] });
+    toast('Tạo user thành công');
+    renderUsers();
+  } catch (e) { toast(e.message, 'error'); }
+}
+
+async function deleteUser(username) {
+  if (!confirm(`Xóa user "${username}"?`)) return;
+  try {
+    await api('DELETE', '/admin/users/' + username);
+    toast('Đã xóa user');
+    renderUsers();
+  } catch (e) { toast(e.message, 'error'); }
+}
+</script>
+
+<script>
+// ======================== ASSIGN ROLES ========================
+async function openAssignRoles(username) {
+  document.getElementById('assignRolesUsername').textContent = username;
+  const container = document.getElementById('assignRolesCheckboxes');
+  container.innerHTML = 'Đang tải...';
+  document.getElementById('modalAssignRoles').classList.add('show');
+  try {
+    const [rolesData, userRolesData] = await Promise.all([
+      api('GET', '/admin/roles'),
+      api('GET', '/admin/users/' + username + '/roles')
+    ]);
+    allRoles = rolesData.roles || [];
+    const userRoles = userRolesData.roles || [];
+    let html = '';
+    if (allRoles.length === 0) {
+      html = '<p>Chưa có role nào. Tạo role trước.</p>';
+    } else {
+      for (const r of allRoles) {
+        const checked = userRoles.includes(r.role_name) ? 'checked' : '';
+        html += `<label style="display:block;margin:0.4rem 0;"><input type="checkbox" value="${r.role_name}" ${checked}> ${r.role_name} <small style="color:#888">${r.description||''}</small></label>`;
+      }
+    }
+    container.innerHTML = html;
+  } catch (e) { container.innerHTML = '<p style="color:red;">Lỗi: ' + e.message + '</p>'; }
+}
+
+async function submitAssignRoles() {
+  const username = document.getElementById('assignRolesUsername').textContent;
+  const checks = document.querySelectorAll('#assignRolesCheckboxes input[type=checkbox]:checked');
+  const roles = Array.from(checks).map(c => c.value);
+  try {
+    await api('PUT', '/admin/users/' + username + '/roles', { roles });
+    toast('Đã gán roles cho ' + username);
+    closeModal('modalAssignRoles');
+    renderUsers();
+  } catch (e) { toast(e.message, 'error'); }
+}
+
+// ======================== ROLES ========================
+async function renderRoles() {
+  const mc = document.getElementById('mainContent');
+  mc.innerHTML = '<div class="card"><h2>Đang tải...</h2></div>';
+  try {
+    const [rolesData, collData] = await Promise.all([
+      api('GET', '/admin/roles'),
+      api('GET', '/admin/collections')
+    ]);
+    allRoles = rolesData.roles || [];
+    allCollections = collData.collections || [];
+    let html = `<div class="card"><h2>🎭 Quản lý Roles (${allRoles.length})</h2>`;
+    html += `<div class="form-row">
+      <input type="text" id="newRoleName" placeholder="Role name">
+      <input type="text" id="newRoleDesc" placeholder="Mô tả (tùy chọn)">
+      <button class="btn btn-primary" onclick="createRole()">+ Tạo Role</button>
+    </div>`;
+    html += `<table><tr><th>Role</th><th>Description</th><th>Permissions</th><th>Actions</th></tr>`;
+    for (const r of allRoles) {
+      const perms = (r.permissions||[]).map(p => `<span class="badge badge-blue">${p.collection}:${p.access}</span>`).join(' ');
+      html += `<tr>
+        <td><strong>${r.role_name}</strong></td>
+        <td>${r.description||''}</td>
+        <td>${perms||'<em>none</em>'}</td>
+        <td>
+          <button class="btn btn-primary" onclick="openEditRolePerms('${r.role_name}')">Sửa Perms</button>
+          <button class="btn btn-danger" onclick="deleteRole('${r.role_name}')">Xóa</button>
+        </td>
+      </tr>`;
+    }
+    html += `</table></div>`;
+    mc.innerHTML = html;
+  } catch (e) { mc.innerHTML = `<div class="card"><h2>Lỗi: ${e.message}</h2></div>`; }
+}
+</script>
+
+<script>
+async function createRole() {
+  const role_name = document.getElementById('newRoleName').value.trim();
+  const description = document.getElementById('newRoleDesc').value.trim();
+  if (!role_name) return toast('Nhập tên role', 'error');
+  try {
+    await api('POST', '/admin/roles', { role_name, description, permissions: [] });
+    toast('Tạo role thành công');
+    renderRoles();
+  } catch (e) { toast(e.message, 'error'); }
+}
+
+async function deleteRole(role_name) {
+  if (!confirm(`Xóa role "${role_name}"?`)) return;
+  try {
+    await api('DELETE', '/admin/roles/' + role_name);
+    toast('Đã xóa role');
+    renderRoles();
+  } catch (e) { toast(e.message, 'error'); }
+}
+
+function openEditRolePerms(role_name) {
+  document.getElementById('editRoleName').textContent = role_name;
+  const role = allRoles.find(r => r.role_name === role_name);
+  const perms = role ? (role.permissions || []) : [];
+  const container = document.getElementById('rolePermsEditor');
+  container.innerHTML = '';
+  for (const p of perms) addRolePermRow(p.collection, p.access);
+  if (perms.length === 0) addRolePermRow();
+  document.getElementById('modalRolePerms').classList.add('show');
+}
+
+function addRolePermRow(collection, access) {
+  const container = document.getElementById('rolePermsEditor');
+  const div = document.createElement('div');
+  div.className = 'form-row';
+  let opts = allCollections.map(c => `<option value="${c}" ${c===collection?'selected':''}>${c}</option>`).join('');
+  div.innerHTML = `
+    <select class="perm-coll"><option value="">-- Collection --</option>${opts}</select>
+    <select class="perm-access"><option value="r" ${access==='r'?'selected':''}>r (read)</option><option value="rw" ${access==='rw'?'selected':''}>rw (read+write)</option></select>
+    <button class="btn btn-danger" onclick="this.parentElement.remove()">✕</button>
+  `;
+  container.appendChild(div);
+}
+
+async function submitRolePerms() {
+  const role_name = document.getElementById('editRoleName').textContent;
+  const rows = document.querySelectorAll('#rolePermsEditor .form-row');
+  const permissions = [];
+  rows.forEach(row => {
+    const coll = row.querySelector('.perm-coll').value;
+    const acc = row.querySelector('.perm-access').value;
+    if (coll) permissions.push({ collection: coll, access: acc });
+  });
+  try {
+    await api('PUT', '/admin/roles/' + role_name + '/permissions', { permissions });
+    toast('Đã cập nhật permissions');
+    closeModal('modalRolePerms');
+    renderRoles();
+  } catch (e) { toast(e.message, 'error'); }
+}
+</script>
+
+<script>
+// ======================== COLLECTIONS ========================
+async function renderCollections() {
+  const mc = document.getElementById('mainContent');
+  mc.innerHTML = '<div class="card"><h2>Đang tải...</h2></div>';
+  try {
+    const data = await api('GET', '/admin/collections');
+    allCollections = data.collections || [];
+    let html = `<div class="card"><h2>📦 Quản lý Collections (${allCollections.length})</h2>`;
+    html += `<div class="form-row">
+      <input type="text" id="newCollName" placeholder="Collection name">
+      <input type="number" id="newCollVectorSize" placeholder="Vector size" value="384" style="width:100px;">
+      <select id="newCollDistance"><option value="Cosine">Cosine</option><option value="Dot">Dot</option><option value="Euclid">Euclid</option></select>
+    </div>
+    <div class="form-row">
+      <label style="font-size:0.85rem;">Shards: <input type="number" id="newCollShards" value="1" min="1" style="width:60px;"></label>
+      <label style="font-size:0.85rem;">Replicas: <input type="number" id="newCollReplicas" value="1" min="1" style="width:60px;"></label>
+      <label style="font-size:0.85rem;">Write Consistency: <input type="number" id="newCollWriteConsistency" value="1" min="1" style="width:60px;"></label>
+      <label style="font-size:0.85rem;"><input type="checkbox" id="newCollOnDisk" checked> On-disk payload</label>
+    </div>
+    <div class="form-row">
+      <button class="btn btn-primary" onclick="createCollection()">+ Tạo Collection</button>
+      <button class="btn btn-success" onclick="syncCollections()">🔄 Sync Oracle</button>
+    </div>`;
+    html += `<table><tr><th>Collection Name</th><th>Actions</th></tr>`;
+    for (const c of allCollections) {
+      html += `<tr>
+        <td><strong>${c}</strong></td>
+        <td>
+          <button class="btn btn-primary" onclick="viewCollectionInfo('${c}')">Chi tiết</button>
+          <button class="btn btn-danger" onclick="deleteCollection('${c}')">Xóa</button>
+        </td>
+      </tr>`;
+    }
+    html += `</table></div>`;
+    mc.innerHTML = html;
+  } catch (e) { mc.innerHTML = `<div class="card"><h2>Lỗi: ${e.message}</h2></div>`; }
+}
+
+async function createCollection() {
+  const collection_name = document.getElementById('newCollName').value.trim();
+  const vector_size = parseInt(document.getElementById('newCollVectorSize').value) || 384;
+  const distance = document.getElementById('newCollDistance').value;
+  const shard_number = parseInt(document.getElementById('newCollShards').value) || 1;
+  const replication_factor = parseInt(document.getElementById('newCollReplicas').value) || 1;
+  const write_consistency_factor = parseInt(document.getElementById('newCollWriteConsistency').value) || 1;
+  const on_disk_payload = document.getElementById('newCollOnDisk').checked;
+  if (!collection_name) return toast('Nhập tên collection', 'error');
+  try {
+    await api('POST', '/admin/collections', { collection_name, vector_size, distance, shard_number, replication_factor, write_consistency_factor, on_disk_payload });
+    toast('Tạo collection thành công');
+    renderCollections();
+  } catch (e) { toast(e.message, 'error'); }
+}
+
+async function deleteCollection(name) {
+  if (!confirm(`Xóa collection "${name}"? Dữ liệu sẽ bị mất!`)) return;
+  try {
+    await api('DELETE', '/admin/collections/' + name);
+    toast('Đã xóa collection');
+    renderCollections();
+  } catch (e) { toast(e.message, 'error'); }
+}
+
+async function syncCollections() {
+  try {
+    const data = await api('POST', '/admin/collections/sync');
+    toast(`Sync thành công! Synced: ${(data.synced||[]).length}`);
+    renderCollections();
+  } catch (e) { toast(e.message, 'error'); }
+}
+
+async function viewCollectionInfo(name) {
+  document.getElementById('collInfoName').textContent = name;
+  document.getElementById('collInfoContent').textContent = 'Đang tải...';
+  document.getElementById('modalCollectionInfo').classList.add('show');
+  try {
+    const data = await api('GET', '/admin/collections/' + name);
+    document.getElementById('collInfoContent').textContent = JSON.stringify(data, null, 2);
+  } catch (e) {
+    document.getElementById('collInfoContent').textContent = 'Lỗi: ' + e.message;
+  }
+}
+</script>
+
+<script>
+// ======================== TEST TOKEN ========================
+function renderTestToken() {
+  const mc = document.getElementById('mainContent');
+  mc.innerHTML = `<div class="card">
+    <h2>🧪 Test Access Token (User Login → Qdrant JWT)</h2>
+    <p style="color:#666;margin-bottom:1rem;">Đăng nhập với user account để lấy Qdrant JWT, sau đó test quyền truy cập collection.</p>
+    <div class="form-row">
+      <input type="text" id="testUser" placeholder="Username">
+      <input type="password" id="testPass" placeholder="Password">
+      <button class="btn btn-primary" onclick="testLogin()">Login & Get Token</button>
+    </div>
+    <div id="testTokenResult" style="margin-top:1rem;"></div>
+    <hr style="margin:1.5rem 0;">
+    <h2>🔍 Test Token Access</h2>
+    <div class="form-row">
+      <input type="text" id="testCollection" placeholder="Collection name">
+      <select id="testAction"><option value="read">Read</option><option value="write">Write</option></select>
+      <button class="btn btn-success" onclick="testAccess()">Test</button>
+    </div>
+    <div id="testAccessResult" style="margin-top:1rem;"></div>
+  </div>`;
+}
+
+let testQdrantToken = '';
+
+async function testLogin() {
+  const username = document.getElementById('testUser').value.trim();
+  const password = document.getElementById('testPass').value;
+  const resultDiv = document.getElementById('testTokenResult');
+  if (!username || !password) return toast('Nhập username và password', 'error');
+  try {
+    // Try user login first
+    let res = await fetch(BASE + '/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ username, password })
+    });
+    let data = await res.json();
+
+    // If user login fails with 403 (admin account), try admin login
+    if (res.status === 403) {
+      res = await fetch(BASE + '/admin/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username, password })
+      });
+      data = await res.json();
+      if (!res.ok) throw new Error(data.detail || 'Login failed');
+      testQdrantToken = data.qdrant_token;
+      resultDiv.innerHTML = `<div style="background:#e6f4ea;padding:0.8rem;border-radius:6px;">
+        <strong>✅ Login thành công (ADMIN - full rw)!</strong><br>
+        <small style="word-break:break-all;">Token: ${testQdrantToken.slice(0,60)}...</small>
+      </div>`;
+      return;
+    }
+
+    if (!res.ok) throw new Error(data.detail || 'Login failed');
+    testQdrantToken = data.qdrant_token;
+    resultDiv.innerHTML = `<div style="background:#e6f4ea;padding:0.8rem;border-radius:6px;">
+      <strong>✅ Login thành công (USER)!</strong><br>
+      <small style="word-break:break-all;">Token: ${testQdrantToken.slice(0,60)}...</small>
+    </div>`;
+  } catch (e) {
+    resultDiv.innerHTML = `<div style="background:#fce8e6;padding:0.8rem;border-radius:6px;color:#d93025;">❌ ${e.message}</div>`;
+  }
+}
+
+async function testAccess() {
+  const collection = document.getElementById('testCollection').value.trim();
+  const action = document.getElementById('testAction').value;
+  const resultDiv = document.getElementById('testAccessResult');
+  if (!collection) return toast('Nhập tên collection', 'error');
+  if (!testQdrantToken) return toast('Login trước để lấy token', 'error');
+  try {
+    const res = await fetch(BASE + '/debug/test-access-token', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + testQdrantToken },
+      body: JSON.stringify({ collection, action })
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.detail || 'Test failed');
+    const color = data.verdict === 'allowed' ? '#e6f4ea' : data.verdict === 'forbidden' ? '#fce8e6' : '#fef7e0';
+    const icon = data.verdict === 'allowed' ? '✅' : data.verdict === 'forbidden' ? '🚫' : '❓';
+    resultDiv.innerHTML = `<div style="background:${color};padding:0.8rem;border-radius:6px;">
+      <strong>${icon} ${data.verdict.toUpperCase()}</strong> — Collection: ${data.collection}, Action: ${data.action}<br>
+      <small>Qdrant HTTP status: ${data.qdrant_status}</small>
+    </div>`;
+  } catch (e) {
+    resultDiv.innerHTML = `<div style="background:#fce8e6;padding:0.8rem;border-radius:6px;color:#d93025;">❌ ${e.message}</div>`;
+  }
+}
+
+// Enter key for login
+document.getElementById('loginPass').addEventListener('keyup', e => { if (e.key === 'Enter') doLogin(); });
+</script>
+</body>
+</html>

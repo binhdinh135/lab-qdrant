@@ -1,0 +1,439 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Search Service — Test UI</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: 'Segoe UI', sans-serif; background: #f5f7fa; padding: 1.5rem; }
+h1 { color: #1a73e8; margin-bottom: 1rem; font-size: 1.4rem; }
+.tabs { display: flex; gap: 0; margin-bottom: 1.5rem; border-bottom: 2px solid #e0e0e0; }
+.tab { padding: 0.7rem 1.5rem; cursor: pointer; border: none; background: none; font-size: 0.95rem; color: #555; border-bottom: 2px solid transparent; margin-bottom: -2px; }
+.tab.active { color: #1a73e8; border-bottom-color: #1a73e8; font-weight: 600; }
+.panel { display: none; }
+.panel.active { display: block; }
+.card { background: #fff; border-radius: 8px; padding: 1.5rem; margin-bottom: 1rem; box-shadow: 0 1px 4px rgba(0,0,0,0.06); }
+.card h2 { font-size: 1rem; margin-bottom: 0.8rem; color: #333; }
+label { display: block; font-size: 0.85rem; color: #555; margin-bottom: 0.3rem; margin-top: 0.6rem; }
+input, textarea, select { width: 100%; padding: 0.5rem; border: 1px solid #ddd; border-radius: 5px; font-size: 0.9rem; }
+textarea { min-height: 100px; resize: vertical; font-family: monospace; }
+.row { display: flex; gap: 1rem; flex-wrap: wrap; }
+.row > * { flex: 1; min-width: 120px; }
+.btn { padding: 0.6rem 1.2rem; border: none; border-radius: 5px; cursor: pointer; font-size: 0.9rem; margin-top: 0.8rem; }
+.btn-primary { background: #1a73e8; color: #fff; }
+.btn-primary:hover { background: #1557b0; }
+.btn-success { background: #1e8e3e; color: #fff; }
+.btn-danger { background: #d93025; color: #fff; }
+.btn-sm { padding: 0.3rem 0.6rem; font-size: 0.8rem; margin-top: 0; }
+.result { margin-top: 1rem; background: #f8f9fa; border-radius: 6px; padding: 1rem; max-height: 500px; overflow-y: auto; font-size: 0.82rem; font-family: monospace; white-space: pre-wrap; }
+.loading { color: #1a73e8; font-style: italic; }
+.error { color: #d93025; }
+.drop-zone { border: 2px dashed #ccc; border-radius: 8px; padding: 2rem; text-align: center; color: #888; cursor: pointer; transition: 0.2s; }
+.drop-zone:hover, .drop-zone.dragover { border-color: #1a73e8; color: #1a73e8; background: #e8f0fe; }
+.drop-zone .filename { color: #1e8e3e; font-weight: 600; margin-top: 0.5rem; }
+.meta-row { display: flex; gap: 0.5rem; margin-bottom: 0.4rem; align-items: center; }
+.meta-row input { flex: 1; }
+</style>
+</head>
+<body>
+<h1>🔍 Search Service — Test UI</h1>
+<div class="tabs">
+<button class="tab active" onclick="showPanel('upload')">📤 Upload File</button>
+<button class="tab" onclick="showPanel('search')">🔎 Semantic Search</button>
+<button class="tab" onclick="showPanel('keyword')">📝 Keyword Search</button>
+<button class="tab" onclick="showPanel('hybrid')">⚡ Hybrid Search</button>
+</div>
+
+<!-- UPLOAD PANEL -->
+<div class="panel active" id="panel-upload">
+<div class="card">
+<h2>📤 Upload File (auto chunk + embed BGE-M3 + store Qdrant)</h2>
+<p style="color:#666;font-size:0.85rem;margin-bottom:1rem;">Hỗ trợ: .txt, .md, .pdf — Tự động chunking, embedding, upload kèm metadata.</p>
+
+<div class="drop-zone" id="dropZone" onclick="document.getElementById('fileInput').click()">
+  <div>📁 Kéo thả file(s) vào đây hoặc click để chọn (nhiều file)</div>
+  <div class="filename" id="fileName"></div>
+</div>
+<input type="file" id="fileInput" accept=".txt,.md,.pdf" style="display:none;" multiple onchange="handleFiles(this)">
+
+<div class="row" style="margin-top:1rem;">
+  <div>
+    <label>Collection</label>
+    <select id="up-collection"><option value="">-- Đang tải --</option></select>
+  </div>
+  <div>
+    <label>Chunk Size</label>
+    <input type="number" id="up-chunk-size" value="512">
+  </div>
+  <div>
+    <label>Chunk Overlap</label>
+    <input type="number" id="up-overlap" value="50">
+  </div>
+</div>
+
+<label>Metadata (thêm bao nhiêu field tùy ý)</label>
+<div id="metaFields">
+  <div class="meta-row">
+    <input type="text" placeholder="key" value="department">
+    <input type="text" placeholder="value" value="public">
+    <button class="btn btn-danger btn-sm" onclick="this.parentElement.remove()">✕</button>
+  </div>
+</div>
+<button class="btn btn-sm btn-primary" onclick="addMetaField()" style="margin-top:0.3rem;">+ Thêm field</button>
+
+<br>
+<button class="btn btn-primary" onclick="doUploadFile()" style="margin-top:1rem;">🚀 Upload & Embed</button>
+<div class="result" id="up-result" style="display:none;"></div>
+</div>
+</div>
+
+<!-- SEMANTIC SEARCH PANEL -->
+<div class="panel" id="panel-search">
+<div class="card">
+<h2>🔎 Semantic Search (vector similarity)</h2>
+<div class="row">
+<div>
+<label>Collection</label>
+<select id="ss-collection"><option value="">--</option></select>
+</div>
+<div>
+<label>Limit</label>
+<input type="number" id="ss-limit" value="5">
+</div>
+</div>
+<label>Query Text (sẽ được embed bằng BGE-M3)</label>
+<textarea id="ss-query" style="min-height:60px;" placeholder="Nhập câu hỏi tìm kiếm..."></textarea>
+<label>Filter (lọc theo metadata — thêm bao nhiêu điều kiện tùy ý)</label>
+<div id="ss-filters">
+  <div class="meta-row">
+    <input type="text" placeholder="key" value="department">
+    <input type="text" placeholder="value" value="">
+    <button class="btn btn-danger btn-sm" onclick="this.parentElement.remove()">✕</button>
+  </div>
+</div>
+<button class="btn btn-sm btn-primary" onclick="addFilterField('ss-filters')" style="margin-top:0.3rem;">+ Thêm filter</button>
+<br>
+<button class="btn btn-success" onclick="doSemanticSearch()" style="margin-top:0.8rem;">Search</button>
+<div class="result" id="ss-result" style="display:none;"></div>
+</div>
+</div>
+
+<!-- KEYWORD SEARCH PANEL -->
+<div class="panel" id="panel-keyword">
+<div class="card">
+<h2>📝 Keyword Search</h2>
+<div class="row">
+<div>
+<label>Collection</label>
+<select id="ks-collection"><option value="">--</option></select>
+</div>
+<div>
+<label>Field</label>
+<input type="text" id="ks-field" value="text">
+</div>
+<div>
+<label>Limit</label>
+<input type="number" id="ks-limit" value="5">
+</div>
+</div>
+<label>Keyword Query</label>
+<input type="text" id="ks-query" placeholder="Nhập từ khóa...">
+<label>Filter (lọc theo metadata)</label>
+<div id="ks-filters">
+  <div class="meta-row">
+    <input type="text" placeholder="key" value="department">
+    <input type="text" placeholder="value" value="">
+    <button class="btn btn-danger btn-sm" onclick="this.parentElement.remove()">✕</button>
+  </div>
+</div>
+<button class="btn btn-sm btn-primary" onclick="addFilterField('ks-filters')" style="margin-top:0.3rem;">+ Thêm filter</button>
+<br>
+<button class="btn btn-success" onclick="doKeywordSearch()" style="margin-top:0.8rem;">Search</button>
+<div class="result" id="ks-result" style="display:none;"></div>
+</div>
+</div>
+
+<!-- HYBRID SEARCH PANEL -->
+<div class="panel" id="panel-hybrid">
+<div class="card">
+<h2>⚡ Hybrid Search (vector + keyword + RRF)</h2>
+<div class="row">
+<div>
+<label>Collection</label>
+<select id="hs-collection"><option value="">--</option></select>
+</div>
+<div>
+<label>Keyword Field</label>
+<input type="text" id="hs-field" value="text">
+</div>
+<div>
+<label>Limit</label>
+<input type="number" id="hs-limit" value="5">
+</div>
+</div>
+<label>Query</label>
+<textarea id="hs-query" style="min-height:60px;" placeholder="Nhập câu hỏi..."></textarea>
+<div class="row">
+<div><label>Vector Weight</label><input type="number" id="hs-vweight" value="0.7" step="0.1" min="0" max="1"></div>
+<div><label>Keyword Weight</label><input type="number" id="hs-kweight" value="0.3" step="0.1" min="0" max="1"></div>
+</div>
+<label>Filter (lọc theo metadata)</label>
+<div id="hs-filters">
+  <div class="meta-row">
+    <input type="text" placeholder="key" value="department">
+    <input type="text" placeholder="value" value="">
+    <button class="btn btn-danger btn-sm" onclick="this.parentElement.remove()">✕</button>
+  </div>
+</div>
+<button class="btn btn-sm btn-primary" onclick="addFilterField('hs-filters')" style="margin-top:0.3rem;">+ Thêm filter</button>
+<br>
+<button class="btn btn-success" onclick="doHybridSearch()" style="margin-top:0.8rem;">Search</button>
+<div class="result" id="hs-result" style="display:none;"></div>
+</div>
+</div>
+
+<script>
+const BASE = '';
+let selectedFiles = [];
+
+// ===== Tab switching =====
+function showPanel(name) {
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.getElementById('panel-' + name).classList.add('active');
+  event.target.classList.add('active');
+}
+
+// ===== Load collections from Qdrant =====
+async function loadCollections() {
+  try {
+    const res = await fetch(BASE + '/collections');
+    const data = await res.json();
+    const colls = data.collections || [];
+    const selects = document.querySelectorAll('select[id$="-collection"]');
+    selects.forEach(sel => {
+      sel.innerHTML = colls.map(c => `<option value="${c}">${c}</option>`).join('');
+      if (colls.length === 0) sel.innerHTML = '<option value="">Chưa có collection</option>';
+    });
+  } catch(e) { console.error('Load collections failed', e); }
+}
+loadCollections();
+
+// ===== File handling =====
+
+function handleFiles(input) {
+  selectedFiles = Array.from(input.files);
+  document.getElementById('fileName').textContent = '✅ ' + selectedFiles.map(f => f.name).join(', ');
+}
+
+const dz = document.getElementById('dropZone');
+dz.addEventListener('dragover', e => { e.preventDefault(); dz.classList.add('dragover'); });
+dz.addEventListener('dragleave', () => dz.classList.remove('dragover'));
+dz.addEventListener('drop', e => {
+  e.preventDefault(); dz.classList.remove('dragover');
+  if (e.dataTransfer.files.length > 0) {
+    selectedFiles = Array.from(e.dataTransfer.files);
+    document.getElementById('fileName').textContent = '✅ ' + selectedFiles.map(f => f.name).join(', ');
+    document.getElementById('fileInput').files = e.dataTransfer.files;
+  }
+});
+
+// ===== Metadata fields =====
+function addMetaField(key, val) {
+  const container = document.getElementById('metaFields');
+  const div = document.createElement('div');
+  div.className = 'meta-row';
+  div.innerHTML = `
+    <input type="text" placeholder="key" value="${key||''}">
+    <input type="text" placeholder="value" value="${val||''}">
+    <button class="btn btn-danger btn-sm" onclick="this.parentElement.remove()">✕</button>
+  `;
+  container.appendChild(div);
+}
+
+function addFilterField(containerId, key, val) {
+  const container = document.getElementById(containerId);
+  const div = document.createElement('div');
+  div.className = 'meta-row';
+  div.innerHTML = `
+    <input type="text" placeholder="key" value="${key||''}">
+    <input type="text" placeholder="value" value="${val||''}">
+    <button class="btn btn-danger btn-sm" onclick="this.parentElement.remove()">✕</button>
+  `;
+  container.appendChild(div);
+}
+
+function getMetadata() {
+  const rows = document.querySelectorAll('#metaFields .meta-row');
+  const meta = {};
+  rows.forEach(row => {
+    const inputs = row.querySelectorAll('input');
+    const k = inputs[0].value.trim();
+    const v = inputs[1].value.trim();
+    if (k) {
+      try { meta[k] = JSON.parse(v); } catch { meta[k] = v; }
+    }
+  });
+  return meta;
+}
+
+function getFilter(containerId) {
+  const rows = document.querySelectorAll('#' + containerId + ' .meta-row');
+  const must = [];
+  rows.forEach(row => {
+    const inputs = row.querySelectorAll('input');
+    const k = inputs[0].value.trim();
+    const v = inputs[1].value.trim();
+    if (k && v) {
+      // Try parse value as number/boolean/array
+      let parsed;
+      try { parsed = JSON.parse(v); } catch { parsed = v; }
+      must.push({"key": k, "match": {"value": parsed}});
+    }
+  });
+  if (must.length === 0) return null;
+  return {"must": must};
+}
+</script>
+
+<script>
+// ===== Helpers =====
+function showResult(id, data) {
+  const el = document.getElementById(id);
+  el.style.display = 'block'; el.className = 'result';
+  el.textContent = JSON.stringify(data, null, 2);
+}
+function showLoading(id) {
+  const el = document.getElementById(id);
+  el.style.display = 'block'; el.className = 'result loading';
+  el.textContent = 'Đang xử lý... (lần đầu embed mất vài phút tải model)';
+}
+function showError(id, msg) {
+  const el = document.getElementById(id);
+  el.style.display = 'block'; el.className = 'result error';
+  el.textContent = 'Lỗi: ' + msg;
+}
+
+// ===== Upload Files =====
+async function doUploadFile() {
+  if (selectedFiles.length === 0) return showError('up-result', 'Chọn file trước');
+  const collection = document.getElementById('up-collection').value;
+  if (!collection) return showError('up-result', 'Chọn collection');
+
+  const chunk_size = document.getElementById('up-chunk-size').value;
+  const chunk_overlap = document.getElementById('up-overlap').value;
+  const metadata = getMetadata();
+
+  showLoading('up-result');
+
+  const results = [];
+  for (const file of selectedFiles) {
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('collection', collection);
+    formData.append('metadata_json', JSON.stringify(metadata));
+    formData.append('chunk_size', chunk_size);
+    formData.append('chunk_overlap', chunk_overlap);
+
+    try {
+      const res = await fetch(BASE + '/ingest/file', { method: 'POST', body: formData });
+      const data = await res.json();
+      if (!res.ok) results.push({ file: file.name, error: data.detail || res.statusText });
+      else results.push({ file: file.name, ...data });
+    } catch(e) { results.push({ file: file.name, error: e.message }); }
+  }
+
+  showResult('up-result', results);
+  loadCollections();
+}
+
+// ===== Semantic Search =====
+async function doSemanticSearch() {
+  const collection = document.getElementById('ss-collection').value;
+  const query = document.getElementById('ss-query').value.trim();
+  const limit = parseInt(document.getElementById('ss-limit').value) || 5;
+  const filter = getFilter('ss-filters');
+
+  if (!collection || !query) return showError('ss-result', 'Nhập collection và query');
+  showLoading('ss-result');
+
+  try {
+    const embedRes = await fetch(BASE + '/embed', {
+      method: 'POST', headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({ texts: [query] })
+    });
+    const embedData = await embedRes.json();
+    if (!embedRes.ok) throw new Error(embedData.detail || 'Embed failed');
+
+    const body = { collection, vector: embedData.dense[0], limit, with_payload: true };
+    if (filter) body.filter = filter;
+    const res = await fetch(BASE + '/search/semantic', {
+      method: 'POST', headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify(body)
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.detail || res.statusText);
+    showResult('ss-result', data);
+  } catch(e) { showError('ss-result', e.message); }
+}
+
+// ===== Keyword Search =====
+async function doKeywordSearch() {
+  const collection = document.getElementById('ks-collection').value;
+  const query = document.getElementById('ks-query').value.trim();
+  const field = document.getElementById('ks-field').value.trim() || 'text';
+  const limit = parseInt(document.getElementById('ks-limit').value) || 5;
+  const filter = getFilter('ks-filters');
+
+  if (!collection || !query) return showError('ks-result', 'Nhập collection và query');
+  showLoading('ks-result');
+
+  try {
+    const body = { collection, query, field, limit };
+    if (filter) body.filter = filter;
+    const res = await fetch(BASE + '/search/keyword', {
+      method: 'POST', headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify(body)
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.detail || res.statusText);
+    showResult('ks-result', data);
+  } catch(e) { showError('ks-result', e.message); }
+}
+
+// ===== Hybrid Search =====
+async function doHybridSearch() {
+  const collection = document.getElementById('hs-collection').value;
+  const query = document.getElementById('hs-query').value.trim();
+  const query_field = document.getElementById('hs-field').value.trim() || 'text';
+  const limit = parseInt(document.getElementById('hs-limit').value) || 5;
+  const vector_weight = parseFloat(document.getElementById('hs-vweight').value) || 0.7;
+  const keyword_weight = parseFloat(document.getElementById('hs-kweight').value) || 0.3;
+  const filter = getFilter('hs-filters');
+
+  if (!collection || !query) return showError('hs-result', 'Nhập collection và query');
+  showLoading('hs-result');
+
+  try {
+    const embedRes = await fetch(BASE + '/embed', {
+      method: 'POST', headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({ texts: [query] })
+    });
+    const embedData = await embedRes.json();
+    if (!embedRes.ok) throw new Error(embedData.detail || 'Embed failed');
+
+    const body = { collection, vector: embedData.dense[0], query, query_field, limit, vector_weight, keyword_weight, with_payload: true };
+    if (filter) body.filter = filter;
+    const res = await fetch(BASE + '/search/hybrid', {
+      method: 'POST', headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify(body)
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.detail || res.statusText);
+    showResult('hs-result', data);
+  } catch(e) { showError('hs-result', e.message); }
+}
+</script>
+</body>
+</html>

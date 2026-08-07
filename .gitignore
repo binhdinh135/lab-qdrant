@@ -1,0 +1,12 @@
+__pycache__/
+*.pyc
+.env
+*.log
+oracle_data/
+qdrant_storage/
+D:\search-venv/
+.venv/
+venv/
+*.egg-info/
+dist/
+build/
