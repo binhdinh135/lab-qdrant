@@ -16,6 +16,13 @@ from models.schemas import (
     MultiSearchRequest,
     UpsertRequest,
     IngestDocumentRequest,
+    SemanticSearchResponse,
+    KeywordSearchResponse,
+    HybridSearchResponse,
+    MultiSearchResponse,
+    IngestResponse,
+    EmbedResponse,
+    CollectionsResponse,
 )
 from services.vector_search import semantic_search
 from services.keyword_search import keyword_search
@@ -48,14 +55,14 @@ class EmbedRequest(BaseModel):
     texts: list[str] = Field(min_length=1)
 
 
-@app.post("/embed")
+@app.post("/embed", response_model=EmbedResponse)
 def api_embed(body: EmbedRequest) -> dict[str, Any]:
     """Embed texts using BGE-M3, returns dense vectors."""
     result = embed_texts(body.texts, return_sparse=False)
     return {"dense": result["dense"]}
 
 
-@app.post("/search/semantic")
+@app.post("/search/semantic", response_model=SemanticSearchResponse)
 async def api_semantic_search(body: SemanticSearchRequest) -> dict[str, Any]:
     result = await semantic_search(
         collection=body.collection,
@@ -72,7 +79,7 @@ async def api_semantic_search(body: SemanticSearchRequest) -> dict[str, Any]:
     return result
 
 
-@app.post("/search/keyword")
+@app.post("/search/keyword", response_model=KeywordSearchResponse)
 async def api_keyword_search(body: KeywordSearchRequest) -> dict[str, Any]:
     result = await keyword_search(
         collection=body.collection,
@@ -86,7 +93,7 @@ async def api_keyword_search(body: KeywordSearchRequest) -> dict[str, Any]:
     return result
 
 
-@app.post("/search/hybrid")
+@app.post("/search/hybrid", response_model=HybridSearchResponse)
 async def api_hybrid_search(body: HybridSearchRequest) -> dict[str, Any]:
     result = await hybrid_search(
         collection=body.collection,
@@ -105,7 +112,7 @@ async def api_hybrid_search(body: HybridSearchRequest) -> dict[str, Any]:
     return result
 
 
-@app.post("/search/multi")
+@app.post("/search/multi", response_model=MultiSearchResponse)
 async def api_multi_search(body: MultiSearchRequest) -> dict[str, Any]:
     """Search across multiple collections, merge by score."""
     all_results: list[dict[str, Any]] = []
@@ -131,7 +138,7 @@ async def api_multi_search(body: MultiSearchRequest) -> dict[str, Any]:
     }
 
 
-@app.post("/ingest")
+@app.post("/ingest", response_model=IngestResponse)
 async def api_upsert(body: UpsertRequest) -> dict[str, Any]:
     """
     Upload points with ACL metadata into a collection.
@@ -151,7 +158,7 @@ async def api_upsert(body: UpsertRequest) -> dict[str, Any]:
     return {"ok": True, "upserted": len(points), "qdrant_result": result}
 
 
-@app.post("/ingest/document")
+@app.post("/ingest/document", response_model=IngestResponse)
 async def api_ingest_document(body: IngestDocumentRequest) -> dict[str, Any]:
     """
     Full pipeline: text → chunking → BGE-M3 embedding → upload to Qdrant.
@@ -175,7 +182,7 @@ async def api_ingest_document(body: IngestDocumentRequest) -> dict[str, Any]:
     return result
 
 
-@app.get("/collections")
+@app.get("/collections", response_model=CollectionsResponse)
 async def api_list_collections() -> dict[str, Any]:
     """List all collections from Qdrant."""
     import httpx

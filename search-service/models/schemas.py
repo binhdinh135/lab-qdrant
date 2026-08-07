@@ -74,3 +74,76 @@ class IngestDocumentRequest(BaseModel):
     chunk_size: int = Field(default=512, ge=100, le=4000)
     chunk_overlap: int = Field(default=50, ge=0, le=500)
     id_prefix: str = Field(default="")
+
+
+# ─────────────────────────────────────────────
+# Response DTOs
+# ─────────────────────────────────────────────
+
+class SearchResultItem(BaseModel):
+    id: int | str
+    score: float | None = None
+    payload: dict[str, Any] | None = None
+    vector: list[float] | None = None
+
+
+class SemanticSearchResponse(BaseModel):
+    result: list[SearchResultItem] = []
+    status: str = "ok"
+    time: float | None = None
+
+
+class KeywordSearchResponse(BaseModel):
+    result: dict[str, Any] = {}
+    status: str = "ok"
+    time: float | None = None
+
+
+class HybridResultItem(BaseModel):
+    id: int | str
+    payload: dict[str, Any] | None = None
+    rrf_score: float
+    vector_rank: int | None = None
+    keyword_rank: int | None = None
+
+
+class HybridSearchResponse(BaseModel):
+    result: list[HybridResultItem] = []
+    vector_count: int = 0
+    keyword_count: int = 0
+    fused_count: int = 0
+
+
+class MultiSearchResultItem(BaseModel):
+    id: int | str
+    score: float | None = None
+    payload: dict[str, Any] | None = None
+    _collection: str = ""
+
+
+class MultiSearchResponse(BaseModel):
+    results: list[dict[str, Any]] = []
+    total_candidates: int = 0
+    collections_searched: list[str] = []
+
+
+class IngestResponse(BaseModel):
+    ok: bool = True
+    chunks: int = 0
+    collection: str = ""
+    qdrant_result: dict[str, Any] = {}
+
+
+class IngestFileResponse(BaseModel):
+    ok: bool = True
+    chunks: int = 0
+    collection: str = ""
+    qdrant_result: dict[str, Any] = {}
+
+
+class EmbedResponse(BaseModel):
+    dense: list[list[float]] = []
+
+
+class CollectionsResponse(BaseModel):
+    collections: list[str] = []
